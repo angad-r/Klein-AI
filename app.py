@@ -5,12 +5,16 @@ Tagline: One Topic. Complete Research. Powered by AI.
 """
 import os
 import time
+import json
+import html
 from pathlib import Path
 import streamlit as st
 
 import config
-from database.db import init_db, save_session, get_all_sessions, get_session_by_id, delete_session
+from database.db import init_db, save_session, get_all_sessions, get_session_by_id, delete_session, clear_all_sessions
 from agents.orchestrator import ResearchOrchestrator
+from agents.planner import plan_research
+from research.citation_validator import validate_citations_and_sources
 from generators.pdf_generator import generate_pdf
 from generators.ppt_generator import generate_presentation
 from generators.report_generator import generate_all_markdown_reports
@@ -304,9 +308,16 @@ with st.sidebar:
                         st.session_state.pptx_file = rec["pptx_path"]
                         st.rerun()
             with col_d:
-                if st.button("🗑️", key=f"del_{s['id']}"):
+                if st.button("🗑️", key=f"del_{s['id']}", help="Delete this session"):
                     delete_session(s["id"])
                     st.rerun()
+        if st.button("🗑️ Clear All History", key="btn_clear_all_hist", use_container_width=True, help="Wipe all saved research sessions from database"):
+            clear_all_sessions()
+            st.session_state.current_report = None
+            st.session_state.pdf_file = None
+            st.session_state.pptx_file = None
+            st.session_state.md_files = {}
+            st.rerun()
     else:
         st.caption("No saved research sessions yet.")
 
@@ -351,17 +362,29 @@ with col_h2:
 # INPUT SECTION
 # ==========================================================
 st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-input_col, run_col = st.columns([5, 1.3])
+input_col, run_col, reset_col = st.columns([4.2, 1.4, 1.2])
 
 with input_col:
     research_topic = st.text_input(
         "Enter Research Topic",
         placeholder="e.g. Impact of Artificial Intelligence on Cybersecurity in Healthcare",
         label_visibility="collapsed",
+        key="main_topic_input",
     )
 
 with run_col:
-    start_research = st.button("🚀 Start Research", type="primary", use_container_width=True)
+    start_research = st.button("🚀 Start Research", type="primary", use_container_width=True, key="btn_start_research")
+
+with reset_col:
+    new_research = st.button("🔄 New Research", use_container_width=True, key="btn_new_research", help="Clear current research view and start fresh")
+
+if new_research:
+    st.session_state.current_report = None
+    st.session_state.pdf_file = None
+    st.session_state.pptx_file = None
+    st.session_state.md_files = {}
+    st.session_state.activity_logs = []
+    st.rerun()
 
 # Quick Topic Prompts
 st.markdown(
@@ -610,9 +633,48 @@ if report:
             unsafe_allow_html=True,
         )
 
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+        col_ov1, col_ov2 = st.columns([1, 1])
+        with col_ov1:
+            if st.button("💾 Save / Update Session in History", key="btn_save_session_manual", use_container_width=True):
+                new_id = save_session(
+                    report,
+                    depth=report.get("depth", "Standard"),
+                    pdf_path=st.session_state.pdf_file or "",
+                    pptx_path=st.session_state.pptx_file or "",
+                )
+                st.success(f"✅ Session saved to database (ID #{new_id})!")
+        with col_ov2:
+            st.download_button(
+                label="📥 Export Complete Session JSON",
+                data=json.dumps(report, indent=2),
+                file_name=f"{report.get('topic', 'research')[:25].replace(' ', '_')}_session.json",
+                mime="application/json",
+                key="dl_json_session_ov",
+                use_container_width=True,
+            )
+
     # TAB 2: RESEARCH PLAN
     with tab_plan:
-        st.markdown("### Autonomous Research Plan & Formulation")
+        col_tp1, col_tp2 = st.columns([3, 1])
+        with col_tp1:
+            st.markdown("### Autonomous Research Plan & Formulation")
+        with col_tp2:
+            if st.button("🔄 Refresh Plan", key="btn_regen_plan", use_container_width=True, help="Re-synthesize research objectives and search queries"):
+                with st.spinner("Regenerating research plan..."):
+                    new_plan = plan_research(
+                        topic=report.get("topic", ""),
+                        depth=report.get("depth", "Standard"),
+                        gemini_key=user_gemini_key,
+                    )
+                    report["objectives"] = new_plan.get("objectives", report["objectives"])
+                    report["research_questions"] = new_plan.get("research_questions", report["research_questions"])
+                    report["subtopics"] = new_plan.get("subtopics", report["subtopics"])
+                    report["search_queries"] = new_plan.get("search_queries", report["search_queries"])
+                    st.session_state.current_report = report
+                    st.success("Research Plan refreshed!")
+                    st.rerun()
+
         col_p1, col_p2 = st.columns(2)
 
         with col_p1:
@@ -635,8 +697,29 @@ if report:
 
     # TAB 3: LITERATURE REVIEW
     with tab_lit:
-        st.markdown("### Thematic Literature Review with In-Text Citations")
-        st.caption("Evidence-grounded synthesis organized into theoretical, empirical, conflict, and horizon sections.")
+        col_lt1, col_lt2 = st.columns([3, 1])
+        with col_lt1:
+            st.markdown("### Thematic Literature Review with In-Text Citations")
+            st.caption("Evidence-grounded synthesis organized into theoretical, empirical, conflict, and horizon sections.")
+        with col_lt2:
+            if st.button("🔄 Re-synthesize Review", key="btn_regen_lit", use_container_width=True, help="Re-generate literature review with citations"):
+                with st.spinner("Re-synthesizing literature review..."):
+                    orch = ResearchOrchestrator(gemini_api_key=user_gemini_key, tavily_api_key=user_tavily_key)
+                    lit_text = orch.tools.generate_literature_review({
+                        "topic": report.get("topic", ""),
+                        "sources": report.get("sources", []),
+                        "analysis": {
+                            "source_summaries": report.get("source_summaries", []),
+                            "comparative_analysis": report.get("comparative_analysis", []),
+                            "consensus_points": report.get("consensus_points", []),
+                            "conflicting_evidence": report.get("conflicting_evidence", []),
+                        }
+                    })
+                    report["literature_review"] = lit_text
+                    st.session_state.current_report = report
+                    st.success("Literature Review refreshed!")
+                    st.rerun()
+
         st.markdown(
             f"""
             <div style="background:#0f172a; padding:20px; border-radius:8px; border:1px solid #1e293b; line-height:1.8;">
@@ -684,8 +767,25 @@ if report:
 
     # TAB 5: RESEARCH GAPS
     with tab_gaps:
-        st.markdown("### Identified Research Gaps (7 Structured Dimensions)")
-        st.caption("Systematic bottlenecks identified within collected literature; not proof of universal novelty.")
+        col_gp1, col_gp2 = st.columns([3, 1])
+        with col_gp1:
+            st.markdown("### Identified Research Gaps (7 Structured Dimensions)")
+            st.caption("Systematic bottlenecks identified within collected literature; not proof of universal novelty.")
+        with col_gp2:
+            if st.button("🔄 Re-evaluate Gaps", key="btn_regen_gaps", use_container_width=True, help="Re-classify research gaps"):
+                with st.spinner("Re-evaluating research gaps..."):
+                    orch = ResearchOrchestrator(gemini_api_key=user_gemini_key, tavily_api_key=user_tavily_key)
+                    new_gaps = orch.tools.identify_research_gaps({
+                        "topic": report.get("topic", ""),
+                        "analysis": {
+                            "comparative_analysis": report.get("comparative_analysis", []),
+                            "conflicting_evidence": report.get("conflicting_evidence", []),
+                        }
+                    })
+                    report["research_gaps"] = new_gaps
+                    st.session_state.current_report = report
+                    st.success("Research Gaps re-evaluated!")
+                    st.rerun()
 
         for g in report.get("research_gaps", []):
             supp = ", ".join(g.get("supporting_sources", [])) or "Identified in collected literature"
@@ -709,7 +809,22 @@ if report:
     # TAB 6: METHODOLOGY
     with tab_meth:
         meth = report.get("methodology", {})
-        st.markdown(f"### Proposed Methodology: {meth.get('framework_name', 'System Architecture')}")
+        col_mt1, col_mt2 = st.columns([3, 1])
+        with col_mt1:
+            st.markdown(f"### Proposed Methodology: {meth.get('framework_name', 'System Architecture')}")
+        with col_mt2:
+            if st.button("🔄 Re-synthesize Methodology", key="btn_regen_meth", use_container_width=True):
+                with st.spinner("Formulating updated methodology..."):
+                    orch = ResearchOrchestrator(gemini_api_key=user_gemini_key, tavily_api_key=user_tavily_key)
+                    new_meth = orch.tools.propose_methodology({
+                        "topic": report.get("topic", ""),
+                        "gaps": report.get("research_gaps", []),
+                    })
+                    report["methodology"] = new_meth
+                    report["proposed_experiments"] = new_meth.get("proposed_experiments", report.get("proposed_experiments", []))
+                    st.session_state.current_report = report
+                    st.success("Methodology updated!")
+                    st.rerun()
 
         st.markdown(
             f"""
@@ -789,7 +904,20 @@ if report:
     # TAB 8: REFERENCES
     with tab_refs:
         audit = report.get("citation_audit", {})
-        st.markdown(f"### Bibliographic References & Citation Audit ({report.get('sources_count', 0)} Sources)")
+        col_rf1, col_rf2 = st.columns([3, 1])
+        with col_rf1:
+            st.markdown(f"### Bibliographic References & Citation Audit ({report.get('sources_count', 0)} Sources)")
+        with col_rf2:
+            if st.button("🛡️ Re-audit Citations", key="btn_reval_cits", use_container_width=True):
+                with st.spinner("Auditing citation coverage & URLs..."):
+                    new_audit = validate_citations_and_sources(
+                        sources=report.get("sources", []),
+                        literature_review_text=report.get("literature_review", ""),
+                    )
+                    report["citation_audit"] = new_audit
+                    st.session_state.current_report = report
+                    st.success("Citation audit updated!")
+                    st.rerun()
 
         ca1, ca2, ca3 = st.columns(3)
         with ca1:
@@ -833,6 +961,12 @@ if report:
         st.markdown("### Download Research Artifacts")
         st.caption("Export publication-grade 17-section PDF, 12-slide PowerPoint presentation, and Markdown dossier suite.")
 
+        # Ensure Markdown files are created if missing
+        if not st.session_state.md_files:
+            st.session_state.md_files = generate_all_markdown_reports(report)
+
+        safe_topic = "".join(c for c in report.get("topic", "research") if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_")[:30]
+
         down_col1, down_col2 = st.columns(2)
 
         with down_col1:
@@ -842,24 +976,41 @@ if report:
                     st.download_button(
                         label="📥 Download Academic Report PDF (17 Sections)",
                         data=f.read(),
-                        file_name="research_report.pdf",
+                        file_name=f"{safe_topic}_Academic_Report.pdf",
                         mime="application/pdf",
                         use_container_width=True,
+                        key="dl_pdf_btn",
                     )
             else:
-                st.button("PDF Generation Pending...", disabled=True, use_container_width=True)
+                if st.button("⚙️ Generate Academic PDF (17 Sections)", key="btn_gen_pdf_ondemand", use_container_width=True):
+                    with st.spinner("Compiling ReportLab PDF..."):
+                        st.session_state.pdf_file = generate_pdf(report)
+                        st.rerun()
 
             if st.session_state.pptx_file and os.path.exists(st.session_state.pptx_file):
                 with open(st.session_state.pptx_file, "rb") as f:
                     st.download_button(
                         label="📥 Download PowerPoint (12 Slides .pptx)",
                         data=f.read(),
-                        file_name="research_presentation.pptx",
+                        file_name=f"{safe_topic}_Presentation.pptx",
                         mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
                         use_container_width=True,
+                        key="dl_pptx_btn",
                     )
             else:
-                st.button("PPTX Generation Pending...", disabled=True, use_container_width=True)
+                if st.button("⚙️ Generate PowerPoint (12 Slides)", key="btn_gen_pptx_ondemand", use_container_width=True):
+                    with st.spinner("Crafting 12-slide presentation deck..."):
+                        st.session_state.pptx_file = generate_presentation(report)
+                        st.rerun()
+
+            st.download_button(
+                label="📥 Export Full Research Dossier (JSON)",
+                data=json.dumps(report, indent=2),
+                file_name=f"{safe_topic}_session_dossier.json",
+                mime="application/json",
+                use_container_width=True,
+                key="dl_json_dossier_btn",
+            )
 
         with down_col2:
             st.markdown("#### 📝 Markdown Dossier Suite")
@@ -870,11 +1021,12 @@ if report:
             if os.path.exists(rep_path):
                 with open(rep_path, "r", encoding="utf-8") as f:
                     st.download_button(
-                        label="Download Full Report (17 Sections .md)",
+                        label="📥 Download Full Report (17 Sections .md)",
                         data=f.read(),
-                        file_name="research_report.md",
+                        file_name=f"{safe_topic}_report.md",
                         mime="text/markdown",
                         use_container_width=True,
+                        key="dl_rep_md",
                     )
 
             # Lit Review MD
@@ -882,11 +1034,12 @@ if report:
             if os.path.exists(lit_path):
                 with open(lit_path, "r", encoding="utf-8") as f:
                     st.download_button(
-                        label="Download Literature Review (.md)",
+                        label="📥 Download Literature Review (.md)",
                         data=f.read(),
-                        file_name="literature_review.md",
+                        file_name=f"{safe_topic}_literature_review.md",
                         mime="text/markdown",
                         use_container_width=True,
+                        key="dl_lit_md",
                     )
 
             # References MD
@@ -894,11 +1047,12 @@ if report:
             if os.path.exists(refs_path):
                 with open(refs_path, "r", encoding="utf-8") as f:
                     st.download_button(
-                        label="Download References (.md)",
+                        label="📥 Download References (.md)",
                         data=f.read(),
-                        file_name="references.md",
+                        file_name=f"{safe_topic}_references.md",
                         mime="text/markdown",
                         use_container_width=True,
+                        key="dl_refs_md",
                     )
 
             # Gaps MD
@@ -906,11 +1060,12 @@ if report:
             if os.path.exists(gaps_path):
                 with open(gaps_path, "r", encoding="utf-8") as f:
                     st.download_button(
-                        label="Download Research Gaps (.md)",
+                        label="📥 Download Research Gaps (.md)",
                         data=f.read(),
-                        file_name="research_gaps.md",
+                        file_name=f"{safe_topic}_research_gaps.md",
                         mime="text/markdown",
                         use_container_width=True,
+                        key="dl_gaps_md",
                     )
 
             # Methodology MD
@@ -918,9 +1073,10 @@ if report:
             if os.path.exists(meth_path):
                 with open(meth_path, "r", encoding="utf-8") as f:
                     st.download_button(
-                        label="Download Methodology (.md)",
+                        label="📥 Download Methodology (.md)",
                         data=f.read(),
-                        file_name="research_methodology.md",
+                        file_name=f"{safe_topic}_methodology.md",
                         mime="text/markdown",
                         use_container_width=True,
+                        key="dl_meth_md",
                     )

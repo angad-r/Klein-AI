@@ -18,9 +18,11 @@ def validate_citations_and_sources(
     Validates references, checks citation coverage in literature review,
     and produces an integrity audit report.
     """
-    # Extract all citation markers like [1], [2], [1, 2], [3-5]
+    # Extract all citation markers like [1], [2], [Source 1], [Source 1, 2], [1, 2], [3-5]
     cited_numbers = set()
-    matches = re.findall(r"\[([0-9,\s\-]+)\]", literature_review_text)
+    normalized_text = re.sub(r"\[\s*Source\s*([0-9]+)", r"[\1", literature_review_text, flags=re.IGNORECASE)
+    normalized_text = re.sub(r",\s*Source\s*([0-9]+)", r", \1", normalized_text, flags=re.IGNORECASE)
+    matches = re.findall(r"\[([0-9,\s\-]+)\]", normalized_text)
     for match in matches:
         # Split on commas
         parts = match.split(",")

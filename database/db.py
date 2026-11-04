@@ -102,3 +102,13 @@ def delete_session(session_id: int):
         cursor = conn.cursor()
         cursor.execute("DELETE FROM research_sessions WHERE id = ?", (session_id,))
         conn.commit()
+
+
+def clear_all_sessions():
+    """Clears all research sessions from the database."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM research_sessions")
+        conn.commit()
+
