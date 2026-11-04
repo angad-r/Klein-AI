@@ -12,4 +12,6 @@ downloads/
 .DS_Store
 *.pdf
 *.pptx
+!PROJECT_REPORT.pdf
+!PROJECT_PRESENTATION.pptx
 !demo_assets/
