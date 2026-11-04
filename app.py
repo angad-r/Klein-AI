@@ -461,14 +461,17 @@ if start_research:
             met_time.metric("Duration", f"{report.get('execution_time_seconds', 0)}s")
 
             # Output Generation
+            safe_fn = "".join(c for c in report.get("topic", "research") if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_")[:25]
+            ts_str = str(int(time.time()))
+
             if gen_pdf:
                 update_status("Compiling Academic ReportLab PDF (17 Sections)...", 0.96)
-                pdf_p = generate_pdf(report)
+                pdf_p = generate_pdf(report, output_path=str(config.OUTPUT_DIR / f"{safe_fn}_{ts_str}_report.pdf"))
                 st.session_state.pdf_file = pdf_p
 
             if gen_pptx:
                 update_status("Crafting 12-Slide PowerPoint Presentation Deck...", 0.98)
-                ppt_p = generate_presentation(report)
+                ppt_p = generate_presentation(report, output_path=str(config.OUTPUT_DIR / f"{safe_fn}_{ts_str}_presentation.pptx"))
                 st.session_state.pptx_file = ppt_p
 
             if gen_md:
@@ -984,7 +987,8 @@ if report:
             else:
                 if st.button("⚙️ Generate Academic PDF (17 Sections)", key="btn_gen_pdf_ondemand", use_container_width=True):
                     with st.spinner("Compiling ReportLab PDF..."):
-                        st.session_state.pdf_file = generate_pdf(report)
+                        p_out = str(config.OUTPUT_DIR / f"{safe_topic}_{int(time.time())}_report.pdf")
+                        st.session_state.pdf_file = generate_pdf(report, output_path=p_out)
                         st.rerun()
 
             if st.session_state.pptx_file and os.path.exists(st.session_state.pptx_file):
@@ -1000,7 +1004,8 @@ if report:
             else:
                 if st.button("⚙️ Generate PowerPoint (12 Slides)", key="btn_gen_pptx_ondemand", use_container_width=True):
                     with st.spinner("Crafting 12-slide presentation deck..."):
-                        st.session_state.pptx_file = generate_presentation(report)
+                        p_out = str(config.OUTPUT_DIR / f"{safe_topic}_{int(time.time())}_presentation.pptx")
+                        st.session_state.pptx_file = generate_presentation(report, output_path=p_out)
                         st.rerun()
 
             st.download_button(

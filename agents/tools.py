@@ -57,8 +57,13 @@ class ToolRegistry:
             if not query or not query.strip():
                 raise ValueError("Query string cannot be empty.")
             
+            results = []
             if config.is_tavily_available(self.tavily_key):
-                results = search_tavily(query.strip(), self.tavily_key, max_results=max_results)
+                try:
+                    results = search_tavily(query.strip(), self.tavily_key, max_results=max_results)
+                except Exception as te:
+                    logger.warning(f"Tavily search failed ({te}). Falling back to public DDG search...")
+                    results = search_fallback_ddg(query.strip(), max_results=max_results)
             else:
                 results = search_fallback_ddg(query.strip(), max_results=max_results)
                 

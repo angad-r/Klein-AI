@@ -229,3 +229,56 @@ def test_download_buttons_file_integrity():
     parsed = json.loads(json_str)
     assert parsed["topic"] == "Cloud Computing Security"
     assert "methodology" in parsed
+
+
+def test_edge_case_very_short_topic():
+    """Verify system stability when topic is an acronym or single word like 'AI'."""
+    orch = ResearchOrchestrator(depth="Quick")
+    report = orch.run_pipeline("AI")
+    assert report is not None
+    assert report.get("sources_count", 0) > 0
+    assert len(report.get("objectives", [])) > 0
+
+
+def test_edge_case_invalid_api_keys_safe_degradation():
+    """Verify that invalid API keys safely degrade to heuristic mode without throwing uncaught exceptions."""
+    orch = ResearchOrchestrator(
+        gemini_api_key="INVALID_GEMINI_KEY_9999",
+        tavily_api_key="INVALID_TAVILY_KEY_9999",
+        depth="Quick"
+    )
+    report = orch.run_pipeline("Robustness of Edge Computing")
+    assert report is not None
+    assert report.get("sources_count", 0) > 0
+    assert "methodology" in report
+
+
+def test_stale_file_prevention_distinct_sessions():
+    """Verify that distinct research sessions produce distinct files without stale data cross-contamination."""
+    from pptx import Presentation
+
+    orch = ResearchOrchestrator(depth="Quick")
+
+    report_a = orch.run_pipeline("Quantum Dot Solar Cells")
+    pdf_a = generate_pdf(report_a, output_path=str(config.OUTPUT_DIR / "session_a_test.pdf"))
+    ppt_a = generate_presentation(report_a, output_path=str(config.OUTPUT_DIR / "session_a_test.pptx"))
+
+    report_b = orch.run_pipeline("Sparse Transformer Attention")
+    pdf_b = generate_pdf(report_b, output_path=str(config.OUTPUT_DIR / "session_b_test.pdf"))
+    ppt_b = generate_presentation(report_b, output_path=str(config.OUTPUT_DIR / "session_b_test.pptx"))
+
+    assert pdf_a != pdf_b
+    assert ppt_a != ppt_b
+
+    # Verify PPTX A has Topic A title
+    prs_a = Presentation(ppt_a)
+    assert len(prs_a.slides) == 12
+    slide_a_text = "".join(shape.text_frame.text for shape in prs_a.slides[0].shapes if shape.has_text_frame)
+    assert "Solar" in slide_a_text or "Quantum" in slide_a_text
+
+    # Verify PPTX B has Topic B title
+    prs_b = Presentation(ppt_b)
+    assert len(prs_b.slides) == 12
+    slide_b_text = "".join(shape.text_frame.text for shape in prs_b.slides[0].shapes if shape.has_text_frame)
+    assert "Sparse" in slide_b_text or "Transformer" in slide_b_text
+
