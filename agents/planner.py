@@ -1,5 +1,5 @@
 """
-Research Planner Agent for Klein AI — ResearchMate AI.
+Research Planner Agent for KLEIN AI.
 Analyzes research topic, generates formal research objectives, research questions (RQ1-RQ4),
 thematic subtopics, and targeted search queries.
 """

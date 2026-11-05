@@ -1,9 +1,9 @@
 """
-Academic Submission Package Generator for Klein AI — ResearchMate AI.
+Academic Submission Package Generator for KLEIN AI.
 Generates:
 1. PROJECT_REPORT.docx (Full 31-section college project report)
 2. PROJECT_REPORT.pdf (Full 31-section academic PDF via ReportLab)
-3. TECHNICAL_RESEARCH_PAPER.docx (Scholarly research paper describing ResearchMate AI)
+3. TECHNICAL_RESEARCH_PAPER.docx (Scholarly research paper describing KLEIN AI)
 4. PROJECT_PRESENTATION.pptx (15-slide professional presentation deck)
 """
 import os
@@ -132,7 +132,7 @@ def create_project_report_docx(output_path: str = "PROJECT_REPORT.docx"):
     r_proj.font.size = Pt(13)
     r_proj.font.bold = True
 
-    r_title = p_proj.add_run("RESEARCHMATE AI: AN AUTONOMOUS AI-POWERED WEB RESEARCH ASSISTANT\n")
+    r_title = p_proj.add_run("KLEIN AI: AN AUTONOMOUS AI-POWERED WEB RESEARCH ASSISTANT\n")
     r_title.font.name = "Arial"
     r_title.font.size = Pt(20)
     r_title.font.bold = True
@@ -179,7 +179,7 @@ def create_project_report_docx(output_path: str = "PROJECT_REPORT.docx"):
     # 2. CERTIFICATE PAGE TEMPLATE
     # -------------------------------------------------------------
     add_title("CERTIFICATE")
-    add_body("This is to certify that the project work entitled \"RESEARCHMATE AI: AN AUTONOMOUS AI-POWERED WEB RESEARCH ASSISTANT\" is a bonafide work carried out by [STUDENT NAME 1] ([USN-01]), [STUDENT NAME 2] ([USN-02]), [STUDENT NAME 3] ([USN-03]), and [STUDENT NAME 4] ([USN-04]) in partial fulfillment for the award of Bachelor of Technology in Computer Science and Engineering from [UNIVERSITY NAME], during the academic year [2025 – 2026].\n\nIt is certified that all corrections and suggestions indicated for internal evaluation have been incorporated in the report. The project report has been approved as it satisfies the academic requirements in respect of project work prescribed for the said degree.")
+    add_body("This is to certify that the project work entitled \"KLEIN AI: AN AUTONOMOUS AI-POWERED WEB RESEARCH ASSISTANT\" is a bonafide work carried out by [STUDENT NAME 1] ([USN-01]), [STUDENT NAME 2] ([USN-02]), [STUDENT NAME 3] ([USN-03]), and [STUDENT NAME 4] ([USN-04]) in partial fulfillment for the award of Bachelor of Technology in Computer Science and Engineering from [UNIVERSITY NAME], during the academic year [2025 – 2026].\n\nIt is certified that all corrections and suggestions indicated for internal evaluation have been incorporated in the report. The project report has been approved as it satisfies the academic requirements in respect of project work prescribed for the said degree.")
 
     doc.add_paragraph().paragraph_format.space_after = Pt(48)
     t_cert = doc.add_table(rows=1, cols=3)
@@ -194,7 +194,7 @@ def create_project_report_docx(output_path: str = "PROJECT_REPORT.docx"):
     # 3. DECLARATION PAGE TEMPLATE
     # -------------------------------------------------------------
     add_title("DECLARATION")
-    add_body("We, the undersigned students of the Department of Computer Science and Engineering, [COLLEGE NAME], hereby declare that the project work entitled \"RESEARCHMATE AI: AN AUTONOMOUS AI-POWERED WEB RESEARCH ASSISTANT\" has been independently carried out by us under the supervision and guidance of [GUIDE NAME], [DESIGNATION], Department of Computer Science and Engineering.\n\nWe further declare that the work reported herein does not form part of any other project or dissertation on the basis of which a degree or award was conferred earlier on this or any other candidate.")
+    add_body("We, the undersigned students of the Department of Computer Science and Engineering, [COLLEGE NAME], hereby declare that the project work entitled \"KLEIN AI: AN AUTONOMOUS AI-POWERED WEB RESEARCH ASSISTANT\" has been independently carried out by us under the supervision and guidance of [GUIDE NAME], [DESIGNATION], Department of Computer Science and Engineering.\n\nWe further declare that the work reported herein does not form part of any other project or dissertation on the basis of which a degree or award was conferred earlier on this or any other candidate.")
 
     doc.add_paragraph().paragraph_format.space_after = Pt(36)
     t_dec = doc.add_table(rows=2, cols=2)
@@ -218,8 +218,8 @@ def create_project_report_docx(output_path: str = "PROJECT_REPORT.docx"):
     # -------------------------------------------------------------
     add_title("ABSTRACT")
     add_body("In modern scientific inquiry and software development, the exponential growth of digital technical literature presents a formidable cognitive bottleneck. Researchers and software engineers face severe information fragmentation across heterogeneous web portals, proprietary academic repositories, and unverified blogs. Conversational Large Language Models (LLMs) have emerged as popular knowledge assistants, but they suffer from critical systemic weaknesses: they fabricate citations (hallucination), lack real-time web exploration, cannot systematically verify webpage text, and fail to differentiate verified empirical claims from speculative opinion.")
-    add_body("This project presents ResearchMate AI (developed under the Klein AI architecture), an autonomous multi-agent artificial intelligence research assistant designed to conduct rigorous, grounded, and verifiable scientific literature mapping from a single natural language prompt. Operating on Python, Streamlit, Google Gemini (via the official google-genai SDK), and the Tavily Web Search API, ResearchMate AI coordinates a structured multi-agent workflow. The system autonomously formulates academic titles, four core objectives, and formal research questions (RQ1–RQ4). It queries the public web across diverse subtopics, dynamically deepens search coverage when candidate sources fall below statistical thresholds, deduplicates URLs, scrapes clean textual bodies via BeautifulSoup, evaluates source credibility across authority tiers, extracts passage-anchored evidence items with empirical confidence scores, synthesizes a thematic literature review with in-text citations, pinpoints research gaps across seven structured dimensions, proposes a novel architectural framework with testable hypotheses, and compiles publication-grade deliverables—including a 17-section PDF report with clickable hyperlinks and a 12-slide PowerPoint presentation deck.")
-    add_body("Empirical testing across three diverse scientific domains—Cybersecurity in Healthcare, Large Language Model Quantization, and Disaster Response Multi-Agent Coordination—confirms that the system successfully eliminates citation fabrication, maintains 100% bibliographic URL verifiability, and delivers end-to-end research dossiers within 15–25 seconds. ResearchMate AI demonstrates that tool-using autonomous agent architectures represent a viable, scalable paradigm shift beyond conversational chatbots for academic inquiry.")
+    add_body("This project presents KLEIN AI (developed under the Klein AI architecture), an autonomous multi-agent artificial intelligence research assistant designed to conduct rigorous, grounded, and verifiable scientific literature mapping from a single natural language prompt. Operating on Python, Streamlit, Google Gemini (via the official google-genai SDK), and the Tavily Web Search API, KLEIN AI coordinates a structured multi-agent workflow. The system autonomously formulates academic titles, four core objectives, and formal research questions (RQ1–RQ4). It queries the public web across diverse subtopics, dynamically deepens search coverage when candidate sources fall below statistical thresholds, deduplicates URLs, scrapes clean textual bodies via BeautifulSoup, evaluates source credibility across authority tiers, extracts passage-anchored evidence items with empirical confidence scores, synthesizes a thematic literature review with in-text citations, pinpoints research gaps across seven structured dimensions, proposes a novel architectural framework with testable hypotheses, and compiles publication-grade deliverables—including a 17-section PDF report with clickable hyperlinks and a 12-slide PowerPoint presentation deck.")
+    add_body("Empirical testing across three diverse scientific domains—Cybersecurity in Healthcare, Large Language Model Quantization, and Disaster Response Multi-Agent Coordination—confirms that the system successfully eliminates citation fabrication, maintains 100% bibliographic URL verifiability, and delivers end-to-end research dossiers within 15–25 seconds. KLEIN AI demonstrates that tool-using autonomous agent architectures represent a viable, scalable paradigm shift beyond conversational chatbots for academic inquiry.")
 
     doc.add_page_break()
 
@@ -272,7 +272,7 @@ def create_project_report_docx(output_path: str = "PROJECT_REPORT.docx"):
     add_h1("1. Introduction")
     add_body("The contemporary digital age is characterized by an exponential acceleration in scientific discovery and software engineering. Thousands of preprints, journal articles, technical standards, and whitepapers are published daily across platforms such as arXiv, IEEE Xplore, PubMed, and organizational portals. Consequently, researchers, graduate students, and software engineers spend over 40% of their investigative time conducting exploratory literature surveys, verifying claims, cross-referencing disparate benchmarks, and formatting bibliographic citations.")
     add_body("In response to this cognitive overload, users frequently turn to conversational AI models. While conversational Large Language Models (LLMs) such as GPT-4, Claude, and Gemini demonstrate remarkable fluencies in natural language generation, their default chat interfaces operate as closed-loop text predictors. When asked to perform academic literature synthesis, they invent plausible-sounding papers, attribute real findings to the wrong authors, generate non-existent DOI links, and present unverified opinions with identical confidence to peer-reviewed empirical facts. This phenomenon—commonly known as AI hallucination—poses severe risks to academic integrity.")
-    add_body("ResearchMate AI addresses this critical divide. Developed as an autonomous agentic system, it combines the reasoning power of modern LLMs with live public web search tools, web content extractors, source quality assessors, evidence passage anchorers, and document compilation engines. The user enters a single high-level inquiry, and the system autonomously plans, executes, cross-references, validates, and publishes a publication-grade research report and slide presentation.")
+    add_body("KLEIN AI addresses this critical divide. Developed as an autonomous agentic system, it combines the reasoning power of modern LLMs with live public web search tools, web content extractors, source quality assessors, evidence passage anchorers, and document compilation engines. The user enters a single high-level inquiry, and the system autonomously plans, executes, cross-references, validates, and publishes a publication-grade research report and slide presentation.")
 
     # -------------------------------------------------------------
     # 8. PROBLEM STATEMENT
@@ -291,7 +291,7 @@ def create_project_report_docx(output_path: str = "PROJECT_REPORT.docx"):
     # -------------------------------------------------------------
     add_h1("3. Motivation & Scope")
     add_body("The primary motivation of this project is to democratize rigorous, evidence-grounded academic research mapping. Software engineers, university students, and independent scholars require an autonomous system that acts as a verifiable research intern—one that searches real sources, reads their contents, extracts exact quotes, evaluates credibility, and formats the output into standard academic structures.")
-    add_body("The scope of ResearchMate AI encompasses:")
+    add_body("The scope of KLEIN AI encompasses:")
     add_bullet("Autonomous inquiry decomposition into formal research questions (RQ1–RQ4).")
     add_bullet("Public web searching via Tavily API with adaptive query deepening.")
     add_bullet("HTML text extraction, sanitization, and accessibility auditing using BeautifulSoup4.")
@@ -324,7 +324,7 @@ def create_project_report_docx(output_path: str = "PROJECT_REPORT.docx"):
     add_body("A comparative matrix highlighting deficiencies in existing systems:")
     t_comp = doc.add_table(rows=5, cols=4)
     t_comp.alignment = WD_TABLE_ALIGNMENT.CENTER
-    headers = ["Capability", "Google Scholar", "Conversational LLM", "ResearchMate AI"]
+    headers = ["Capability", "Google Scholar", "Conversational LLM", "KLEIN AI"]
     for col_idx, h in enumerate(headers):
         t_comp.cell(0, col_idx).paragraphs[0].add_run(h).bold = True
 
@@ -342,7 +342,7 @@ def create_project_report_docx(output_path: str = "PROJECT_REPORT.docx"):
     # 13. PROPOSED SYSTEM & 14. SYSTEM REQUIREMENTS
     # -------------------------------------------------------------
     add_h1("7. Proposed System Architecture")
-    add_body("ResearchMate AI resolves these limitations by implementing an autonomous agent pipeline with a centralized Research Orchestrator. The orchestrator coordinates specialized sub-agents: the Planner formulates the scope, the Web Searcher retrieves real public URLs, the Extractor cleans HTML bodies, the Source Assessor scores domain credibility, the Evidence Engine anchors claims to direct quotes, the Literature Reviewer drafts thematic scholarly prose, the Gap Finder pinpoints 7-dimension bottlenecks, the Methodology Designer structures experiments, the Citation Validator audits references, and the Deliverables Engine compiles PDF, PPTX, and Markdown files.")
+    add_body("KLEIN AI resolves these limitations by implementing an autonomous agent pipeline with a centralized Research Orchestrator. The orchestrator coordinates specialized sub-agents: the Planner formulates the scope, the Web Searcher retrieves real public URLs, the Extractor cleans HTML bodies, the Source Assessor scores domain credibility, the Evidence Engine anchors claims to direct quotes, the Literature Reviewer drafts thematic scholarly prose, the Gap Finder pinpoints 7-dimension bottlenecks, the Methodology Designer structures experiments, the Citation Validator audits references, and the Deliverables Engine compiles PDF, PPTX, and Markdown files.")
 
     add_h1("8. System Requirements & Specifications")
     add_h2("Hardware Requirements:")
@@ -488,7 +488,7 @@ def create_project_report_docx(output_path: str = "PROJECT_REPORT.docx"):
              "• Camera-Ready LaTeX Export: Generating formatted IEEE and ACM conference template archives (.tex).")
 
     add_h1("26. Conclusion")
-    add_body("ResearchMate AI successfully demonstrates the power of autonomous agent architectures for scientific inquiry. By replacing conversational chatbots with a tool-using multi-agent workflow, the system eliminates citation hallucination, enforces empirical evidence anchoring, identifies structured research gaps, and automates publication-grade document generation. Developed within a rigorous software engineering framework, ResearchMate AI stands ready for academic demonstration, evaluation, and future research deployment.")
+    add_body("KLEIN AI successfully demonstrates the power of autonomous agent architectures for scientific inquiry. By replacing conversational chatbots with a tool-using multi-agent workflow, the system eliminates citation hallucination, enforces empirical evidence anchoring, identifies structured research gaps, and automates publication-grade document generation. Developed within a rigorous software engineering framework, KLEIN AI stands ready for academic demonstration, evaluation, and future research deployment.")
 
     add_h1("27. References")
     refs = [
@@ -536,7 +536,7 @@ class AcademicReportNumberedCanvas(canvas.Canvas):
 
         # Header on page 2 onwards
         if self._pageNumber > 1:
-            self.drawString(54, 755, "RESEARCHMATE AI: AUTONOMOUS RESEARCH ASSISTANT  |  MAJOR PROJECT REPORT")
+            self.drawString(54, 755, "KLEIN AI: AUTONOMOUS RESEARCH ASSISTANT  |  MAJOR PROJECT REPORT")
             self.setStrokeColor(colors.HexColor("#CBD5E1"))
             self.setLineWidth(0.5)
             self.line(54, 748, 558, 748)
@@ -631,7 +631,7 @@ def create_project_report_pdf(output_path: str = "PROJECT_REPORT.pdf"):
     # COVER PAGE
     story.append(Paragraph("<font size=11 color='#4B5563'><b>[DEPARTMENT OF COMPUTER SCIENCE &amp; ENGINEERING]<br/>[INSTITUTION / UNIVERSITY NAME HERE]<br/>ACADEMIC YEAR: 2025–2026</b></font>", ParagraphStyle("C1", parent=styles["Normal"], alignment=1, spaceAfter=40)))
     story.append(Paragraph("A MAJOR PROJECT REPORT ON", ParagraphStyle("C2", parent=styles["Normal"], alignment=1, fontSize=12, fontName="Helvetica-Bold", spaceAfter=20)))
-    story.append(Paragraph("RESEARCHMATE AI: AN AUTONOMOUS AI-POWERED WEB RESEARCH ASSISTANT", title_style))
+    story.append(Paragraph("KLEIN AI: AN AUTONOMOUS AI-POWERED WEB RESEARCH ASSISTANT", title_style))
     story.append(HRFlowable(width="80%", thickness=2, color=COLOR_PRIMARY, spaceBefore=8, spaceAfter=24))
 
     meta_text = (
@@ -651,14 +651,14 @@ def create_project_report_pdf(output_path: str = "PROJECT_REPORT.pdf"):
     # ABSTRACT
     story.append(Paragraph("ABSTRACT", h1_style))
     story.append(Paragraph(
-        "This project report details <b>ResearchMate AI</b>, an autonomous multi-agent research assistant designed to conduct grounded scientific literature synthesis from a single user topic. Built on Python, Streamlit, Google Gemini API, and Tavily Web Search API, the system automates topic decomposition into four objectives and formal research questions (RQ1–RQ4), multi-angle public web searching, adaptive query deepening, HTML extraction via BeautifulSoup, source authority assessment, grounded empirical claim extraction, literature review synthesis with in-text citations, 7-dimension research gap discovery, structured methodology design, and publication-grade export (17-section PDF report and 12-slide PowerPoint presentation). Empirical testing across three scientific domains confirms that the system maintains 100% bibliographic URL verifiability, eliminates citation hallucination, and delivers complete dossiers within 15–25 seconds.",
+        "This project report details <b>KLEIN AI</b>, an autonomous multi-agent research assistant designed to conduct grounded scientific literature synthesis from a single user topic. Built on Python, Streamlit, Google Gemini API, and Tavily Web Search API, the system automates topic decomposition into four objectives and formal research questions (RQ1–RQ4), multi-angle public web searching, adaptive query deepening, HTML extraction via BeautifulSoup, source authority assessment, grounded empirical claim extraction, literature review synthesis with in-text citations, 7-dimension research gap discovery, structured methodology design, and publication-grade export (17-section PDF report and 12-slide PowerPoint presentation). Empirical testing across three scientific domains confirms that the system maintains 100% bibliographic URL verifiability, eliminates citation hallucination, and delivers complete dossiers within 15–25 seconds.",
         body_style
     ))
     story.append(Spacer(1, 10))
 
     # REPORT BODY SECTIONS
     sections = [
-        ("1. Introduction", "In modern scientific inquiry, the exponential growth of technical literature presents a formidable cognitive bottleneck. Conversational AI chatbots hallucinate citations and lack live web scraping tools. ResearchMate AI bridges this gap through a verified autonomous agent pipeline."),
+        ("1. Introduction", "In modern scientific inquiry, the exponential growth of technical literature presents a formidable cognitive bottleneck. Conversational AI chatbots hallucinate citations and lack live web scraping tools. KLEIN AI bridges this gap through a verified autonomous agent pipeline."),
         ("2. Problem Statement", "Manual literature reviewing takes weeks, while standard LLMs hallucinate non-existent authors, papers, and DOIs. A verifiable, tool-using research assistant is required to automate evidence mapping."),
         ("3. Project Objectives", "To implement an autonomous multi-agent pipeline; to query Tavily API with adaptive deepening; to anchor claims to direct quotes; to assess source credibility; to discover 7-dimension research gaps; and to compile publication-grade PDF and PPTX deliverables."),
         ("4. System Architecture & Workflow", "The system coordinates specialized modules: Planner, ToolRegistry, Web Searcher, BeautifulSoup Extractor, Source Assessor, Evidence Engine, Literature Reviewer, Gap Finder, Methodology Designer, Citation Validator, and Deliverables Engine."),
@@ -668,7 +668,7 @@ def create_project_report_pdf(output_path: str = "PROJECT_REPORT.pdf"):
         ("8. 7-Dimension Research Gap Discovery", "Each gap details: Gap ID, Title, Structural Explanation, Supporting Sources, Operational Impact, Suggested Research Question, Possible Methodology, and Feasibility."),
         ("9. Proposed Methodology & Validation Suite", "The system designs a formal research framework with hypotheses (H1–H3), dataset requirements, variables, and proposed validation experiments clearly distinguished as proposals pending empirical execution."),
         ("10. Testing Results & Verification", "All 8 automated tests passed in pytest. End-to-end multi-topic tests across Healthcare Cybersecurity, LLM Quantization, and Multi-Agent Disaster Response verified 100% URL verifiability and PDF/PPTX compilation."),
-        ("11. Conclusion & Future Scope", "ResearchMate AI proves that tool-using autonomous agents eliminate citation hallucination and automate literature synthesis. Future work includes direct PDF uploads and containerized sandbox experiment execution."),
+        ("11. Conclusion & Future Scope", "KLEIN AI proves that tool-using autonomous agents eliminate citation hallucination and automate literature synthesis. Future work includes direct PDF uploads and containerized sandbox experiment execution."),
     ]
 
     for title_s, text_s in sections:
@@ -696,7 +696,7 @@ def create_technical_research_paper_docx(output_path: str = "TECHNICAL_RESEARCH_
     # Title
     p_t = doc.add_paragraph()
     p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_t = p_t.add_run("ResearchMate AI: An Autonomous Multi-Agent Framework for Grounded Web Intelligence and Academic Literature Synthesis")
+    r_t = p_t.add_run("KLEIN AI: An Autonomous Multi-Agent Framework for Grounded Web Intelligence and Academic Literature Synthesis")
     r_t.font.name = "Arial"
     r_t.font.size = Pt(18)
     r_t.font.bold = True
@@ -716,7 +716,7 @@ def create_technical_research_paper_docx(output_path: str = "TECHNICAL_RESEARCH_
     p_ab = doc.add_paragraph()
     r_abh = p_ab.add_run("Abstract—")
     r_abh.bold = True
-    r_ab = p_ab.add_run("Conversational Large Language Models (LLMs) have emerged as powerful text generators, yet their application to academic literature surveying remains fraught with severe reliability hazards: hallucinated bibliographic citations, an inability to search dynamic public web resources, and a lack of grounded passage verification. This paper presents ResearchMate AI, an autonomous multi-agent systems framework designed to conduct end-to-end, evidence-grounded scientific research synthesis. Controlled by a central Research Orchestrator and a typed Tool Registry, the system decomposes research topics into formal questions (RQ1–RQ4), executes multi-query web searches via Tavily, cleans HTML bodies via BeautifulSoup, assesses source authority tiers, extracts passage-anchored evidence items with empirical confidence metrics, pinpoints 7-dimension research gaps, proposes formal experimental methodologies, and exports publication-grade deliverables including 17-section PDF reports and 12-slide presentation decks. Empirical evaluations across three distinct domains confirm that ResearchMate AI achieves 100% bibliographic URL verifiability, eliminates fabricated citations, and completes end-to-end literature synthesis within 15 to 25 seconds.")
+    r_ab = p_ab.add_run("Conversational Large Language Models (LLMs) have emerged as powerful text generators, yet their application to academic literature surveying remains fraught with severe reliability hazards: hallucinated bibliographic citations, an inability to search dynamic public web resources, and a lack of grounded passage verification. This paper presents KLEIN AI, an autonomous multi-agent systems framework designed to conduct end-to-end, evidence-grounded scientific research synthesis. Controlled by a central Research Orchestrator and a typed Tool Registry, the system decomposes research topics into formal questions (RQ1–RQ4), executes multi-query web searches via Tavily, cleans HTML bodies via BeautifulSoup, assesses source authority tiers, extracts passage-anchored evidence items with empirical confidence metrics, pinpoints 7-dimension research gaps, proposes formal experimental methodologies, and exports publication-grade deliverables including 17-section PDF reports and 12-slide presentation decks. Empirical evaluations across three distinct domains confirm that KLEIN AI achieves 100% bibliographic URL verifiability, eliminates fabricated citations, and completes end-to-end literature synthesis within 15 to 25 seconds.")
     p_ab.paragraph_format.space_after = Pt(8)
 
     # Keywords
@@ -743,9 +743,9 @@ def create_technical_research_paper_docx(output_path: str = "TECHNICAL_RESEARCH_
         p_b.paragraph_format.space_after = Pt(8)
         p_b.paragraph_format.line_spacing = 1.15
 
-    add_sec("I. INTRODUCTION", "Scientific advancement depends fundamentally on cumulative scholarship. However, the volume of scholarly output has outpaced human reading bandwidth. Large Language Models offer promising synthesis capabilities, but when queried in standard chat dialogs, they exhibit high rates of hallucination—inventing non-existent papers, attributing claims incorrectly, and fabricating DOI links. This paper presents ResearchMate AI, an autonomous multi-agent framework designed to eliminate hallucination through live web scraping, source quality auditing, and grounded evidence extraction.")
+    add_sec("I. INTRODUCTION", "Scientific advancement depends fundamentally on cumulative scholarship. However, the volume of scholarly output has outpaced human reading bandwidth. Large Language Models offer promising synthesis capabilities, but when queried in standard chat dialogs, they exhibit high rates of hallucination—inventing non-existent papers, attributing claims incorrectly, and fabricating DOI links. This paper presents KLEIN AI, an autonomous multi-agent framework designed to eliminate hallucination through live web scraping, source quality auditing, and grounded evidence extraction.")
 
-    add_sec("II. RELATED WORK", "Existing literature synthesis systems include keyword search engines (Google Scholar, PubMed) that retrieve documents without synthesis, closed proprietary aggregators (Elicit, Semantic Scholar) that summarize single papers without end-to-end document compilation, and ReAct-style LLM agents (Yao et al., 2023). ResearchMate AI advances beyond prior work by combining adaptive query deepening, domain authority tiering, 7-dimension gap analysis, and automated dual-format publication generation (PDF and PPTX).")
+    add_sec("II. RELATED WORK", "Existing literature synthesis systems include keyword search engines (Google Scholar, PubMed) that retrieve documents without synthesis, closed proprietary aggregators (Elicit, Semantic Scholar) that summarize single papers without end-to-end document compilation, and ReAct-style LLM agents (Yao et al., 2023). KLEIN AI advances beyond prior work by combining adaptive query deepening, domain authority tiering, 7-dimension gap analysis, and automated dual-format publication generation (PDF and PPTX).")
 
     add_sec("III. SYSTEM DESIGN & ARCHITECTURE", "The architecture is structured around two decoupling patterns: (1) A centralized Research Orchestrator that maintains pipeline state and error boundaries, and (2) A typed Tool Registry exposing search_web, extract_webpage, compare_sources, generate_literature_review, and compile_deliverables. Communication between modules is mediated via structured JSON contracts, preventing cascade failures.")
 
@@ -757,7 +757,7 @@ def create_technical_research_paper_docx(output_path: str = "TECHNICAL_RESEARCH_
 
     add_sec("VII. LIMITATIONS & FUTURE SCOPE", "Current limitations include reliance on snippet abstracts for paywalled commercial publisher portals, and the fact that proposed experiments represent structured validation protocols rather than completed empirical executions. Future work will integrate direct PDF uploads, native arXiv/Semantic Scholar APIs, and containerized sandbox experiment execution.")
 
-    add_sec("VIII. CONCLUSION", "ResearchMate AI demonstrates that tool-using autonomous agent architectures provide a dependable, verifiable foundation for academic literature synthesis. By anchoring claims to extracted text and verifying bibliographic citations, the framework establishes a reproducible paradigm for AI-assisted scholarship.")
+    add_sec("VIII. CONCLUSION", "KLEIN AI demonstrates that tool-using autonomous agent architectures provide a dependable, verifiable foundation for academic literature synthesis. By anchoring claims to extracted text and verifying bibliographic citations, the framework establishes a reproducible paradigm for AI-assisted scholarship.")
 
     # References
     p_ref_h = doc.add_paragraph()
@@ -805,7 +805,7 @@ def create_project_presentation_pptx(output_path: str = "PROJECT_PRESENTATION.pp
         s.line.color.rgb = COLOR_BG
         return s
 
-    def add_header(slide, title_text, category="KLEIN AI — RESEARCHMATE AI • MAJOR PROJECT DEFENSE"):
+    def add_header(slide, title_text, category="KLEIN AI • MAJOR PROJECT DEFENSE"):
         cat_box = slide.shapes.add_textbox(PptxInches(0.8), PptxInches(0.4), PptxInches(11.5), PptxInches(0.35))
         tf_c = cat_box.text_frame
         p_c = tf_c.paragraphs[0]
@@ -863,7 +863,7 @@ def create_project_presentation_pptx(output_path: str = "PROJECT_PRESENTATION.pp
     p0.space_after = PptxPt(10)
 
     p1 = tf1.add_paragraph()
-    p1.text = "ResearchMate AI: An Autonomous AI-Powered Web Research Assistant"
+    p1.text = "KLEIN AI: An Autonomous AI-Powered Web Research Assistant"
     p1.font.bold = True
     p1.font.size = PptxPt(26)
     p1.font.color.rgb = COLOR_TEXT_PRIMARY
@@ -899,15 +899,15 @@ def create_project_presentation_pptx(output_path: str = "PROJECT_PRESENTATION.pp
     # SLIDE 5: Existing System vs Proposed System
     s5 = prs.slides.add_slide(blank_layout)
     apply_bg(s5)
-    add_header(s5, "Existing Systems vs. ResearchMate AI")
+    add_header(s5, "Existing Systems vs. KLEIN AI")
     add_card(s5, 0.8, 1.8, 5.6, 5.0, "EXISTING PARADIGMS", "• Google Scholar: Keyword index only; zero automated synthesis.\n• Proprietary Aggregators (Elicit): Paid subscriptions; no full slide/PDF generation.\n• Conversational Chatbots: High hallucination rate; no verified source database.\n• Manual Literature Synthesis: Requires weeks of manual reading and note-taking.", COLOR_ACCENT_CRIMSON)
-    add_card(s5, 6.8, 1.8, 5.7, 5.0, "RESEARCHMATE AI (PROPOSED)", "• Autonomous 15-Stage Workflow: Orchestrated tool execution.\n• 100% Verified URLs: Eliminates citation hallucination completely.\n• Source Quality Assessor: Scores authority (ArXiv, IEEE, NIST vs Blogs).\n• 7-Dimension Gap Discovery: Identifies open empirical bottlenecks.\n• Instant Export: Complete ReportLab PDF and PowerPoint deck in < 25s.", COLOR_ACCENT_CYAN)
+    add_card(s5, 6.8, 1.8, 5.7, 5.0, "KLEIN AI (PROPOSED)", "• Autonomous 15-Stage Workflow: Orchestrated tool execution.\n• 100% Verified URLs: Eliminates citation hallucination completely.\n• Source Quality Assessor: Scores authority (ArXiv, IEEE, NIST vs Blogs).\n• 7-Dimension Gap Discovery: Identifies open empirical bottlenecks.\n• Instant Export: Complete ReportLab PDF and PowerPoint deck in < 25s.", COLOR_ACCENT_CYAN)
 
     # SLIDE 6: Proposed Solution
     s6 = prs.slides.add_slide(blank_layout)
     apply_bg(s6)
     add_header(s6, "Proposed Solution: The Multi-Agent Architecture")
-    add_card(s6, 0.8, 1.8, 11.7, 5.0, "DECOUPLED AGENT PIPELINE", "ResearchMate AI coordinates specialized agents through a central Research Orchestrator:\n\n1. Research Planner: Formulates title, 4 objectives, and RQ1–RQ4.\n2. Tool Registry: Dispatches typed tools (search_web, extract_webpage, compare_sources).\n3. Web Search Agent: Queries Tavily public index with adaptive query deepening.\n4. Extraction & Quality Assessor: Scrapes clean HTML; scores credibility (0.0 to 1.0).\n5. Evidence Engine: Anchors claims to extracted quotes (Supported/Limited/Unverified).\n6. Literature Reviewer: Synthesizes thematic review with bracketed in-text citations.\n7. Gap & Methodology Agents: Formulate 7D research gaps and proposed experiments.\n8. Deliverables Engine: Compiles ReportLab PDF, PowerPoint deck, and Markdown dossiers.", COLOR_ACCENT_VIOLET)
+    add_card(s6, 0.8, 1.8, 11.7, 5.0, "DECOUPLED AGENT PIPELINE", "KLEIN AI coordinates specialized agents through a central Research Orchestrator:\n\n1. Research Planner: Formulates title, 4 objectives, and RQ1–RQ4.\n2. Tool Registry: Dispatches typed tools (search_web, extract_webpage, compare_sources).\n3. Web Search Agent: Queries Tavily public index with adaptive query deepening.\n4. Extraction & Quality Assessor: Scrapes clean HTML; scores credibility (0.0 to 1.0).\n5. Evidence Engine: Anchors claims to extracted quotes (Supported/Limited/Unverified).\n6. Literature Reviewer: Synthesizes thematic review with bracketed in-text citations.\n7. Gap & Methodology Agents: Formulate 7D research gaps and proposed experiments.\n8. Deliverables Engine: Compiles ReportLab PDF, PowerPoint deck, and Markdown dossiers.", COLOR_ACCENT_VIOLET)
 
     # SLIDE 7: System Architecture Diagram
     s7 = prs.slides.add_slide(blank_layout)

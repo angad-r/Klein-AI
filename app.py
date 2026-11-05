@@ -1,5 +1,5 @@
 """
-Klein AI — ResearchMate AI
+KLEIN AI
 Autonomous Academic Research Assistant
 Tagline: One Topic. Complete Research. Powered by AI.
 """
@@ -14,6 +14,8 @@ import config
 from database.db import init_db, save_session, get_all_sessions, get_session_by_id, delete_session, clear_all_sessions
 from agents.orchestrator import ResearchOrchestrator
 from agents.planner import plan_research
+from agents.llm_utils import verify_gemini_connection
+from research.search import verify_tavily_connection
 from research.citation_validator import validate_citations_and_sources
 from generators.pdf_generator import generate_pdf
 from generators.ppt_generator import generate_presentation
@@ -21,7 +23,7 @@ from generators.report_generator import generate_all_markdown_reports
 
 # Streamlit Page Config
 st.set_page_config(
-    page_title="Klein AI — ResearchMate AI",
+    page_title="KLEIN AI",
     page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -209,6 +211,14 @@ if "md_files" not in st.session_state:
     st.session_state.md_files = {}
 if "activity_logs" not in st.session_state:
     st.session_state.activity_logs = []
+if "gemini_status" not in st.session_state:
+    st.session_state.gemini_status = None
+if "gemini_msg" not in st.session_state:
+    st.session_state.gemini_msg = ""
+if "tavily_status" not in st.session_state:
+    st.session_state.tavily_status = None
+if "tavily_msg" not in st.session_state:
+    st.session_state.tavily_msg = ""
 
 # Auto-recover latest session on browser refresh if available
 if st.session_state.current_report is None:
@@ -231,7 +241,7 @@ with st.sidebar:
             <div style="background:linear-gradient(135deg, #7c3aed, #f43f5e); width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px;">🔬</div>
             <div>
                 <h3 style="margin:0; font-size:18px;">Klein AI</h3>
-                <span style="font-size:11px; color:#94a3b8;">ResearchMate AI Engine</span>
+                <span style="font-size:11px; color:#94a3b8;">Autonomous Research Assistant</span>
             </div>
         </div>
         """,
@@ -245,14 +255,35 @@ with st.sidebar:
         type="password",
         placeholder="AIzaSy...",
         help="Google Gemini API Key from Google AI Studio",
+        key="input_gemini_key",
     )
+    # Gemini live status indicator
+    if not user_gemini_key.strip():
+        st.markdown('<div style="font-size:11.5px; color:#94a3b8; margin-top:-8px; margin-bottom:8px;">⚪ Gemini: <b>Disconnected</b> (No Key)</div>', unsafe_allow_html=True)
+    elif st.session_state.gemini_status == "CONNECTED":
+        st.markdown(f'<div style="font-size:11.5px; color:#34d399; margin-top:-8px; margin-bottom:8px;">🟢 Gemini: <b>Connected</b> ({st.session_state.gemini_msg})</div>', unsafe_allow_html=True)
+    elif st.session_state.gemini_status == "FAILED":
+        st.markdown(f'<div style="font-size:11.5px; color:#fb7185; margin-top:-8px; margin-bottom:8px;">🔴 Gemini: <b>{st.session_state.gemini_msg}</b></div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div style="font-size:11.5px; color:#c084fc; margin-top:-8px; margin-bottom:8px;">🟡 Gemini: Key Entered (Click Test to verify)</div>', unsafe_allow_html=True)
+
     user_tavily_key = st.text_input(
         "Tavily API Key",
         value=config.TAVILY_API_KEY,
         type="password",
         placeholder="tvly-...",
         help="Tavily Web Search Key from app.tavily.com",
+        key="input_tavily_key",
     )
+    # Tavily live status indicator
+    if not user_tavily_key.strip():
+        st.markdown('<div style="font-size:11.5px; color:#94a3b8; margin-top:-8px; margin-bottom:8px;">⚪ Tavily: <b>Disconnected</b> (Public Search Used)</div>', unsafe_allow_html=True)
+    elif st.session_state.tavily_status == "CONNECTED":
+        st.markdown('<div style="font-size:11.5px; color:#34d399; margin-top:-8px; margin-bottom:8px;">🟢 Tavily: <b>Connected & Verified</b></div>', unsafe_allow_html=True)
+    elif st.session_state.tavily_status == "FAILED":
+        st.markdown(f'<div style="font-size:11.5px; color:#fb7185; margin-top:-8px; margin-bottom:8px;">🔴 Tavily: <b>{st.session_state.tavily_msg}</b></div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div style="font-size:11.5px; color:#c084fc; margin-top:-8px; margin-bottom:8px;">🟡 Tavily: Key Entered (Click Test to verify)</div>', unsafe_allow_html=True)
 
     model_choice = st.selectbox(
         "Gemini Model",
@@ -261,17 +292,52 @@ with st.sidebar:
     )
     config.GEMINI_MODEL = model_choice
 
+    col_api1, col_api2 = st.columns(2)
+    with col_api1:
+        if st.button("🔌 Test APIs", key="btn_test_apis", use_container_width=True, help="Verify key validity against Google & Tavily servers"):
+            with st.spinner("Testing API connections..."):
+                if user_gemini_key.strip():
+                    g_ok, g_msg = verify_gemini_connection(user_gemini_key.strip(), model=model_choice)
+                    st.session_state.gemini_status = "CONNECTED" if g_ok else "FAILED"
+                    st.session_state.gemini_msg = g_msg
+                else:
+                    st.session_state.gemini_status = "MISSING"
+                    st.session_state.gemini_msg = "Key is missing"
+
+                if user_tavily_key.strip():
+                    t_ok, t_msg = verify_tavily_connection(user_tavily_key.strip())
+                    st.session_state.tavily_status = "CONNECTED" if t_ok else "FAILED"
+                    st.session_state.tavily_msg = t_msg
+                else:
+                    st.session_state.tavily_status = "MISSING"
+                    st.session_state.tavily_msg = "Key is missing"
+                st.rerun()
+
+    with col_api2:
+        if st.button("💾 Save .env", key="btn_save_env_keys", use_container_width=True, help="Explicitly save entered keys to local .env file"):
+            saved = config.save_api_keys_to_env(user_gemini_key, user_tavily_key)
+            if saved:
+                st.toast("✅ API keys saved securely to local .env")
+            else:
+                st.error("Failed to write to .env")
+
     has_live_keys = bool(user_gemini_key and user_tavily_key)
     if has_live_keys:
         st.markdown(
             '<div class="badge-cyan" style="width:100%; text-align:center; padding:6px 0; margin-top:6px;">'
-            '● LIVE API MODE (Gemini + Tavily Connected)</div>',
+            '● LIVE API MODE (Gemini + Tavily Ready)</div>',
+            unsafe_allow_html=True,
+        )
+    elif user_gemini_key:
+        st.markdown(
+            '<div class="badge-violet" style="width:100%; text-align:center; padding:6px 0; margin-top:6px;">'
+            '● HYBRID MODE (Gemini Reasoning + Public Search)</div>',
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
             '<div class="badge-crimson" style="width:100%; text-align:center; padding:6px 0; margin-top:6px;">'
-            '▲ DEMO MODE ACTIVE (Simulated Synthesis & Public Search)</div>',
+            '▲ OFFLINE HEURISTIC MODE (No API Keys Configured)</div>',
             unsafe_allow_html=True,
         )
 
@@ -322,7 +388,7 @@ with st.sidebar:
         st.caption("No saved research sessions yet.")
 
     st.markdown("---")
-    st.caption("Klein AI — ResearchMate AI v2.5 • Final Polish")
+    st.caption("KLEIN AI v2.5 • Final Polish")
 
 
 # ==========================================================
@@ -335,7 +401,7 @@ with col_h1:
         f"""
         <div style="margin-bottom:6px;">
             <span class="badge-violet">KLEIN AI</span>
-            <span class="badge-crimson">RESEARCHMATE AI</span>
+            <span class="badge-crimson">AUTONOMOUS RESEARCH</span>
             <h1 style="margin:6px 0 2px 0; font-size:34px;">Turn any topic into complete research.</h1>
             <p style="color:#94a3b8; font-size:15px; margin:0;">
                 {config.APP_TAGLINE}
@@ -450,6 +516,7 @@ if start_research:
                 depth=depth_choice,
                 status_callback=update_status,
                 activity_log_callback=append_log,
+                model=model_choice,
             )
 
             report = orch.run_pipeline(research_topic.strip())
@@ -503,6 +570,12 @@ report = st.session_state.current_report
 
 if report:
     st.markdown("---")
+
+    if report.get("search_failed"):
+        st.warning(
+            f"⚠️ **Web Search Notice:** {report.get('search_warning', 'External search was unavailable or yielded 0 sources.')} "
+            "Preliminary structural research analysis is presented below. In accordance with academic research integrity standards, no external empirical citations have been fabricated."
+        )
 
     # Executive Overview Header
     st.markdown(
@@ -739,6 +812,8 @@ if report:
 
         st.markdown("#### Grounded Empirical Claims")
         evidence_items = report.get("evidence_items", [])
+        if not evidence_items:
+            st.info("ℹ️ **No external empirical claims extracted.** As per research integrity protocols, no claims or citations are fabricated when search yields zero sources.")
         for ev in evidence_items:
             conf = ev.get("confidence", "Supported")
             badge = "badge-green" if conf == "Supported" else "badge-crimson" if conf == "Unverified" else "badge-cyan"
@@ -761,7 +836,10 @@ if report:
             )
 
         st.markdown("#### Source Quality & Credibility Directory")
-        for s in report.get("sources", [])[:8]:
+        sources_list = report.get("sources", [])
+        if not sources_list:
+            st.info("ℹ️ **No external sources collected.**")
+        for s in sources_list[:8]:
             with st.expander(f"[{s.get('source_type', 'Source')}] {s.get('title', 'Document')}"):
                 st.markdown(f"**URL:** [{s.get('url')}]({s.get('url')})")
                 st.markdown(f"**Credibility Tier:** `{s.get('credibility_tier', 'Moderate')}` | **Authority Score:** `{s.get('authority_score', 0.7)}`")
@@ -931,7 +1009,10 @@ if report:
             st.metric("Citation Coverage", f"{audit.get('citation_coverage_percent', 100.0)}%")
 
         st.markdown("#### Verified Source Citations")
-        for r in report.get("references", []):
+        refs = report.get("references", [])
+        if not refs:
+            st.info("ℹ️ **No citations or references available** because external web search was unavailable or yielded zero sources.")
+        for r in refs:
             idx = r.get("index", 1)
             t = r.get("title", "Document")
             u = r.get("url", "#")

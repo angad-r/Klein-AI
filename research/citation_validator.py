@@ -1,5 +1,5 @@
 """
-Citation Validator for Klein AI — ResearchMate AI.
+Citation Validator for KLEIN AI.
 Ensures research integrity:
 - Verifies that all cited indices ([1], [2], etc.) map directly to collected real sources.
 - Flags missing metadata (missing publication dates, missing authors, inaccessible links).
@@ -24,7 +24,6 @@ def validate_citations_and_sources(
     normalized_text = re.sub(r",\s*Source\s*([0-9]+)", r", \1", normalized_text, flags=re.IGNORECASE)
     matches = re.findall(r"\[([0-9,\s\-]+)\]", normalized_text)
     for match in matches:
-        # Split on commas
         parts = match.split(",")
         for part in parts:
             part = part.strip()
@@ -83,6 +82,13 @@ def validate_citations_and_sources(
 
     coverage_pct = (len(cited_numbers) / total_sources * 100) if total_sources > 0 else 0.0
 
+    if total_sources == 0:
+        integrity_status = "WARNING_ORPHAN_CITATIONS" if unverified_citations else "NO_SOURCES_COLLECTED"
+        notes = "No external web sources were collected. No verified citations asserted."
+    else:
+        integrity_status = "VERIFIED" if not unverified_citations else "WARNING_ORPHAN_CITATIONS"
+        notes = "All bibliographic entries strictly derived from public search results without fabrication."
+
     return {
         "total_sources_collected": total_sources,
         "total_sources_cited": len(cited_numbers),
@@ -90,6 +96,6 @@ def validate_citations_and_sources(
         "all_citations": valid_citations,
         "missing_metadata_flags": missing_metadata_flags,
         "unverified_citations": unverified_citations,
-        "integrity_status": "VERIFIED" if not unverified_citations else "WARNING_ORPHAN_CITATIONS",
-        "notes": "All bibliographic entries strictly derived from public search results without fabrication.",
+        "integrity_status": integrity_status,
+        "notes": notes,
     }

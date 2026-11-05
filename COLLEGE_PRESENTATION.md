@@ -1,16 +1,16 @@
-# Klein AI — ResearchMate AI: College Project Presentation Guide
+# KLEIN AI: College Project Presentation Guide
 
 This guide provides slide-by-slide content, speaker notes, and presentation talking points for defending the project before a college evaluation panel.
 
 ---
 
 ### Slide 1: Title & Introduction
-- **Slide Title:** Klein AI — ResearchMate AI: Autonomous Academic Research Assistant
+- **Slide Title:** KLEIN AI: Autonomous Academic Research Assistant
 - **Subtitle:** One Topic. Complete Research. Powered by AI.
 - **Presenter / Team:** Senior AI Engineering Team
 - **Key Visual:** System architecture badge, dark dashboard preview.
 - **Speaker Notes:**
-  > "Good morning, respected professors and evaluation panel. Today, we present ResearchMate AI, an autonomous research assistant. Given a single research topic, our system independently analyzes the problem, formulates academic objectives, searches the live public internet using Tavily, extracts evidence via BeautifulSoup, synthesizes literature with Google Gemini, pinpoints critical research gaps, proposes experimental methodologies, and compiles publication-grade PDF and PowerPoint deliverables."
+  > "Good morning, respected professors and evaluation panel. Today, we present KLEIN AI, an autonomous research assistant. Given a single research topic, our system independently analyzes the problem, formulates academic objectives, searches the live public internet using Tavily, extracts evidence via BeautifulSoup, synthesizes literature with Google Gemini, pinpoints critical research gaps, proposes experimental methodologies, and compiles publication-grade PDF and PowerPoint deliverables."
 
 ---
 
@@ -55,7 +55,7 @@ This guide provides slide-by-slide content, speaker notes, and presentation talk
 ### Slide 5: Existing System Limitations (Chatbot vs. Autonomous Agent)
 - **Slide Title:** Chatbot vs. Autonomous Research Agent
 - **Comparison Matrix:**
-  | Feature | Generic LLM Chatbot | Klein AI — ResearchMate AI |
+  | Feature | Generic LLM Chatbot | KLEIN AI |
   |---|---|---|
   | **Web Search** | Static weights / Single query | Multi-query search via Tavily with adaptive deepening |
   | **Evidence Grounding** | Text generated from internal memory | Anchored to extracted HTML/PDF passages |
@@ -151,4 +151,4 @@ This guide provides slide-by-slide content, speaker notes, and presentation talk
   - Multi-format publication output (PDF, PPTX, Markdown).
   - Open for evaluation and questions.
 - **Speaker Notes:**
-  > "To conclude: ResearchMate AI turns a single topic into complete, evidence-backed research. It replaces speculative chatbot text with verified web literature, grounded evidence, structured gap analysis, and professional deliverables. Thank you, and we welcome your questions."
+  > "To conclude: KLEIN AI turns a single topic into complete, evidence-backed research. It replaces speculative chatbot text with verified web literature, grounded evidence, structured gap analysis, and professional deliverables. Thank you, and we welcome your questions."

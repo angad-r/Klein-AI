@@ -1,5 +1,5 @@
 """
-Unit & Integration Tests for Klein AI — ResearchMate AI.
+Unit & Integration Tests for KLEIN AI.
 Tests pipeline robustness against edge cases and verifies advanced Part 2 features:
 - Tool Registry execution & telemetry
 - Source Quality Assessor & Credibility Tiers

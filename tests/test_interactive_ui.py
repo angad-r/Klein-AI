@@ -1,5 +1,5 @@
 """
-Automated UI, Widget, Button, and Interactive Element Testing Suite for Klein AI (ResearchMate AI).
+Automated UI, Widget, Button, and Interactive Element Testing Suite for Klein AI (KLEIN AI).
 Tests every interactive element, button response, state transition, and file export.
 """
 import sys
@@ -67,7 +67,6 @@ Quantum & Biometric Vulnerabilities! @2026"""
     report = orch.run_pipeline(tricky_topic)
     assert report is not None
     assert "sources" in report
-    assert len(report["sources"]) > 0
     assert "abstract" in report
     assert "methodology" in report
 
@@ -78,7 +77,8 @@ def test_button_start_research_very_long_topic():
     long_topic = "Impact of Autonomous Artificial Intelligence Systems on Cybersecurity in Cloud Hospital Databases " * 5
     report = orch.run_pipeline(long_topic)
     assert report is not None
-    assert report.get("sources_count", 0) > 0
+    assert "methodology" in report
+    assert "abstract" in report
 
 
 def test_history_buttons_save_load_delete_clear():
@@ -236,12 +236,12 @@ def test_edge_case_very_short_topic():
     orch = ResearchOrchestrator(depth="Quick")
     report = orch.run_pipeline("AI")
     assert report is not None
-    assert report.get("sources_count", 0) > 0
     assert len(report.get("objectives", [])) > 0
+    assert "methodology" in report
 
 
 def test_edge_case_invalid_api_keys_safe_degradation():
-    """Verify that invalid API keys safely degrade to heuristic mode without throwing uncaught exceptions."""
+    """Verify that invalid API keys safely degrade without throwing uncaught exceptions and without fabricating sources."""
     orch = ResearchOrchestrator(
         gemini_api_key="INVALID_GEMINI_KEY_9999",
         tavily_api_key="INVALID_TAVILY_KEY_9999",
@@ -249,8 +249,11 @@ def test_edge_case_invalid_api_keys_safe_degradation():
     )
     report = orch.run_pipeline("Robustness of Edge Computing")
     assert report is not None
-    assert report.get("sources_count", 0) > 0
     assert "methodology" in report
+    assert "abstract" in report
+    # Verify no fake DOI or synthetic corpus was injected
+    for ref in report.get("references", []):
+        assert "10.1145" not in ref.get("url", "")
 
 
 def test_stale_file_prevention_distinct_sessions():

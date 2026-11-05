@@ -1,11 +1,11 @@
 """
-Web search engine for Klein AI — ResearchMate AI.
+Web search engine for KLEIN AI.
 Executes public web searches using Tavily API with retry logic, rate limit handling,
-and public fallback search.
+and public search fallback.
 """
 import time
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from urllib.parse import urlparse
 from tavily import TavilyClient
 
@@ -66,18 +66,39 @@ def deduplicate_sources(sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return unique
 
 
+def verify_tavily_connection(api_key: str) -> Tuple[bool, str]:
+    """Tests live Tavily connectivity without exposing credentials."""
+    if not api_key or len(api_key.strip()) < 5:
+        return False, "Tavily API key is missing or too short."
+    try:
+        client = TavilyClient(api_key=api_key.strip())
+        res = client.search(query="test ping", max_results=1)
+        if isinstance(res, dict) and "results" in res:
+            return True, "Connected to Tavily Search API successfully."
+        return False, "Unexpected response structure from Tavily."
+    except Exception as e:
+        err_str = str(e)
+        if api_key in err_str:
+            err_str = err_str.replace(api_key, "[REDACTED]")
+        if "Unauthorized" in err_str or "401" in err_str or "invalid" in err_str.lower():
+            return False, "Invalid API key: Tavily rejected the credential (401 Unauthorized)."
+        if "429" in err_str or "limit" in err_str.lower():
+            return False, "Quota exceeded: Tavily search limit reached."
+        return False, f"Connection error: {err_str[:120]}"
+
+
 def search_tavily(query: str, api_key: str, max_results: int = 5) -> List[Dict[str, Any]]:
     """Executes a real Tavily web search with retries."""
     if not api_key:
         raise ValueError("Tavily API key is missing.")
 
-    client = TavilyClient(api_key=api_key)
+    client = TavilyClient(api_key=api_key.strip())
     retries = 0
     last_err = None
 
     while retries <= config.MAX_RETRIES:
         try:
-            logger.info(f"Tavily search for '{query}' (attempt {retries + 1})...")
+            logger.info(f"Tavily search for query (attempt {retries + 1})...")
             res = client.search(
                 query=query,
                 search_depth="advanced",
@@ -99,7 +120,10 @@ def search_tavily(query: str, api_key: str, max_results: int = 5) -> List[Dict[s
                 })
             return formatted
         except Exception as e:
-            last_err = e
+            err_str = str(e)
+            if api_key in err_str:
+                err_str = err_str.replace(api_key, "[REDACTED]")
+            last_err = err_str
             retries += 1
             time.sleep(1.0)
 
@@ -107,10 +131,10 @@ def search_tavily(query: str, api_key: str, max_results: int = 5) -> List[Dict[s
 
 
 def search_fallback_ddg(query: str, max_results: int = 5) -> List[Dict[str, Any]]:
-    """Fallback search when Tavily key is omitted or rate limited."""
+    """Fallback public search when Tavily key is omitted or rate limited."""
     try:
         from ddgs import DDGS
-        logger.info(f"Fallback search for '{query}'...")
+        logger.info(f"Public fallback search for '{query}'...")
         formatted = []
         with DDGS() as ddg:
             raw = list(ddg.text(query, max_results=max_results))
@@ -122,12 +146,12 @@ def search_fallback_ddg(query: str, max_results: int = 5) -> List[Dict[str, Any]
                     "content": item.get("body", item.get("content", "")),
                     "score": 0.5,
                     "published_date": "",
-                    "source_engine": "DuckDuckGo (Fallback)",
+                    "source_engine": "DuckDuckGo (Public Search)",
                     "accessible": True,
                 })
         return formatted
     except Exception as e:
-        logger.error(f"Fallback search error: {e}")
+        logger.error(f"Public fallback search error: {e}")
         return []
 
 
@@ -151,7 +175,7 @@ def execute_multi_search(
             try:
                 batch = search_tavily(q, tavily_api_key, max_results=max_results_per_query)
             except Exception as e:
-                logger.warning(f"Tavily query failed ({e}), falling back to DDG...")
+                logger.warning(f"Tavily query failed ({e}), falling back to public search...")
                 batch = search_fallback_ddg(q, max_results=max_results_per_query)
         else:
             batch = search_fallback_ddg(q, max_results=max_results_per_query)

@@ -1,6 +1,6 @@
-# Klein AI (ResearchMate AI) — Comprehensive Viva Voce & Technical Defense Guide
+# Klein AI (KLEIN AI) — Comprehensive Viva Voce & Technical Defense Guide
 
-This guide provides **45 detailed questions and in-depth academic/technical answers** designed for college project defense, internal review, and viva examination for **Klein AI / ResearchMate AI**.
+This guide provides **45 detailed questions and in-depth academic/technical answers** designed for college project defense, internal review, and viva examination for **Klein AI / KLEIN AI**.
 
 ---
 

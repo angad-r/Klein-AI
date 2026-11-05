@@ -1,5 +1,5 @@
 """
-SQLite Database module for Klein AI — ResearchMate AI.
+SQLite Database module for KLEIN AI.
 Handles persistence of research sessions, telemetry, and artifact records.
 """
 import sqlite3

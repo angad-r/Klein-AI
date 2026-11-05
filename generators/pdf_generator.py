@@ -1,5 +1,5 @@
 """
-Academic PDF Report Generator for Klein AI — ResearchMate AI.
+Academic PDF Report Generator for KLEIN AI.
 Produces publication-grade PDFs via ReportLab with 17 academic sections:
 1. Title Header & Metadata
 2. Abstract Callout Box
@@ -63,7 +63,7 @@ class NumberedCanvas(canvas.Canvas):
 
         # Running header for pages > 1
         if self._pageNumber > 1:
-            self.drawString(54, 755, "Klein AI — ResearchMate AI  |  Autonomous Academic Dossier")
+            self.drawString(54, 755, "KLEIN AI  |  Autonomous Academic Dossier")
             self.setStrokeColor(colors.HexColor("#CBD5E1"))
             self.setLineWidth(0.5)
             self.line(54, 748, 558, 748)
@@ -71,7 +71,7 @@ class NumberedCanvas(canvas.Canvas):
         # Running footer on all pages
         page_str = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(558, 36, page_str)
-        self.drawString(54, 36, "Generated autonomously by Klein AI • ResearchMate AI Suite")
+        self.drawString(54, 36, "Generated autonomously by Klein AI • KLEIN AI Suite")
         self.setStrokeColor(colors.HexColor("#CBD5E1"))
         self.setLineWidth(0.5)
         self.line(54, 48, 558, 48)
@@ -194,7 +194,7 @@ def generate_pdf(report_data: Dict[str, Any], output_path: str = None) -> str:
 
     # 1. Title Page / Header
     title = report_data.get("title", "Autonomous Academic Research Report")
-    story.append(Paragraph("KLEIN AI — RESEARCHMATE AI • AUTONOMOUS INVESTIGATION SERIES", tag_style))
+    story.append(Paragraph("KLEIN AI • AUTONOMOUS INVESTIGATION SERIES", tag_style))
     story.append(Paragraph(title, title_style))
     story.append(HRFlowable(width="100%", thickness=1.5, color=COLOR_PRIMARY, spaceBefore=2, spaceAfter=10))
 

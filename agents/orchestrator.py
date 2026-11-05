@@ -1,12 +1,13 @@
 """
-Central Research Orchestrator for Klein AI — ResearchMate AI.
+Central Research Orchestrator for KLEIN AI.
 Features intelligent multi-agent decision-making:
 - Tool Calling via ToolRegistry
-- Adaptive secondary search if source count is insufficient
+- Adaptive secondary search if source count is low
 - Source Quality Assessment & Credibility Scoring
 - Evidence-Based Claim Extraction (grounded passages & confidence)
 - Conflict Detection & Consensus Reporting
 - Complete 17-section structured academic compilation
+- Zero Fabrication: Never synthesizes fake URLs, DOIs, or papers if search fails
 """
 import time
 import logging
@@ -35,12 +36,14 @@ class ResearchOrchestrator:
         depth: str = "Standard",
         status_callback: Optional[Callable[[str, float], None]] = None,
         activity_log_callback: Optional[Callable[[str, str], None]] = None,
+        model: Optional[str] = None,
     ):
         self.gemini_key = gemini_api_key or config.GEMINI_API_KEY
         self.tavily_key = tavily_api_key or config.TAVILY_API_KEY
         self.depth = depth
         self.status_cb = status_callback
         self.log_cb = activity_log_callback
+        self.model = model or config.GEMINI_MODEL
         self.logs: List[Dict[str, str]] = []
         self.is_demo = config.is_demo_mode(self.gemini_key, self.tavily_key)
         self.tools = ToolRegistry(gemini_key=self.gemini_key, tavily_key=self.tavily_key)
@@ -61,14 +64,14 @@ class ResearchOrchestrator:
 
     def run_pipeline(self, topic: str) -> Dict[str, Any]:
         """
-        Executes the intelligent autonomous research pipeline.
+        Executes the intelligent autonomous research pipeline without fabrication.
         """
         topic = topic.strip()
         if not topic:
             raise ValueError("Research topic cannot be empty.")
 
         start_time = time.time()
-        self._log("INIT", f"Initializing Klein AI Autonomous Orchestrator for: '{topic}'", 0.05)
+        self._log("INIT", f"Initializing KLEIN AI Autonomous Orchestrator for: '{topic}'", 0.05)
 
         # -------------------------------------------------------------
         # STAGE 1: Research Planning & Query Generation
@@ -86,7 +89,7 @@ class ResearchOrchestrator:
         # -------------------------------------------------------------
         # STAGE 2: Web Search & Adaptive Deepening
         # -------------------------------------------------------------
-        self._log("RESEARCHER", f"Dispatching Tavily Web Search (Depth: {self.depth})...", 0.28)
+        self._log("RESEARCHER", f"Dispatching Web Search via Tavily / Public Engine (Depth: {self.depth})...", 0.28)
         raw_sources = []
         for q in initial_queries:
             results = self.tools.search_web(q, max_results=config.SEARCH_DEPTH_CONFIG[self.depth]["results_per_query"])
@@ -97,8 +100,8 @@ class ResearchOrchestrator:
         unique_sources = deduplicate_sources(raw_sources)
         self._log("RESEARCHER", f"Discovered {len(unique_sources)} unique candidate sources.", 0.38)
 
-        # INTELLIGENT DECISION: If source count is low (< 4), trigger adaptive secondary queries
-        if len(unique_sources) < 4:
+        # INTELLIGENT DECISION: If source count is low (1-3), trigger adaptive secondary queries
+        if 0 < len(unique_sources) < 4:
             self._log("ADAPTIVE_SEARCH", "Source count below threshold (<4). Formulating secondary deepening queries...", 0.42)
             deepening_queries = [
                 f"{topic} empirical evaluation benchmark study",
@@ -110,41 +113,16 @@ class ResearchOrchestrator:
             unique_sources = deduplicate_sources(unique_sources)
             self._log("ADAPTIVE_SEARCH", f"Expanded evidence pool to {len(unique_sources)} unique sources.", 0.45)
 
-        # RESILIENCE SAFEGUARD: If all search endpoints fail (offline / IP blocked / invalid credentials), provide grounded baseline corpus
-        if len(unique_sources) == 0:
-            self._log("FALLBACK_CORPUS", f"Search engines unavailable or rate-limited; generating grounded baseline corpus for '{topic}'...", 0.48)
-            unique_sources = [
-                {
-                    "title": f"A Comprehensive Survey on {topic}",
-                    "url": f"https://arxiv.org/abs/2401.{1000 + len(topic)}",
-                    "content": f"Systematic review of foundational architectures, empirical benchmarks, and scalability constraints in {topic}.",
-                    "snippet": f"Foundational architectures and empirical evaluation of {topic}.",
-                    "score": 0.95,
-                    "published_date": "2024",
-                    "source_engine": "Academic Archive (Fallback)",
-                    "accessible": True,
-                },
-                {
-                    "title": f"Empirical Benchmarking and Robustness Analysis of {topic}",
-                    "url": f"https://ieee.org/document/{9000000 + len(topic)}",
-                    "content": f"Comparative benchmarking analyzing computational latency, throughput, and error mitigation strategies in {topic}.",
-                    "snippet": f"Benchmarking performance, latency, and operational limits in {topic}.",
-                    "score": 0.92,
-                    "published_date": "2024",
-                    "source_engine": "IEEE Xplore (Fallback)",
-                    "accessible": True,
-                },
-                {
-                    "title": f"Security, Privacy, and Systemic Bottlenecks in {topic}",
-                    "url": f"https://acm.org/doi/10.1145/{3000000 + len(topic)}",
-                    "content": f"Critical inquiry into unaddressed vulnerabilities, privacy-preserving compliance, and architectural bottlenecks in {topic}.",
-                    "snippet": f"Security trade-offs, privacy concerns, and architectural limitations in {topic}.",
-                    "score": 0.90,
-                    "published_date": "2025",
-                    "source_engine": "ACM Digital Library (Fallback)",
-                    "accessible": True,
-                },
-            ]
+        # RESEARCH INTEGRITY: If search fails completely, DO NOT FABRICATE SOURCES.
+        search_failed = (len(unique_sources) == 0)
+        search_warning = ""
+        if search_failed:
+            search_warning = (
+                f"Web search returned 0 accessible sources for '{topic}'. "
+                "Per KLEIN AI research integrity protocols, no synthetic or fake paper titles, URLs, or citations were generated. "
+                "Please verify network connectivity and ensure valid search API credentials are configured."
+            )
+            self._log("WARNING", search_warning, 0.48)
 
         # -------------------------------------------------------------
         # STAGE 3: Web Content Extraction & Quality Assessment
@@ -169,7 +147,10 @@ class ResearchOrchestrator:
 
         # Quality assessment
         assessed_sources = enrich_sources_with_quality(unique_sources)
-        self._log("SOURCE_ASSESSOR", f"Assessed source credibility tiers: {len(assessed_sources)} sources classified.", 0.60)
+        if assessed_sources:
+            self._log("SOURCE_ASSESSOR", f"Assessed source credibility tiers: {len(assessed_sources)} sources classified.", 0.60)
+        else:
+            self._log("SOURCE_ASSESSOR", "Source pool empty. Skipping credibility classification.", 0.60)
 
         # -------------------------------------------------------------
         # STAGE 4: Source Analysis, Comparative Matrix & Evidence Extraction
@@ -221,7 +202,7 @@ class ResearchOrchestrator:
         )
 
         elapsed = round(time.time() - start_time, 2)
-        self._log("COMPLETE", f"Autonomous research completed in {elapsed}s across {len(assessed_sources)} sources.", 0.96)
+        self._log("COMPLETE", f"Autonomous research completed in {elapsed}s across {len(assessed_sources)} verified sources.", 0.96)
 
         # Generate Keywords
         keywords = [
@@ -234,37 +215,58 @@ class ResearchOrchestrator:
         ]
 
         title = plan_data.get("academic_title", f"Autonomous Systematic Investigation into {topic}")
-        problem_statement = (
-            f"Despite accelerating developments in {topic}, the field is hindered by fragmented benchmark reporting, "
-            f"inconsistent baseline standardization, and unresolved trade-offs between computational overhead and empirical robustness. "
-            f"Without a unified systematic synthesis and rigorous empirical validation protocols, deploying such systems in mission-critical "
-            f"and high-concurrency environments remains fraught with performance unpredictability."
-        )
 
-        abstract = (
-            f"This paper presents an autonomous systematic inquiry into {topic}. "
-            f"Drawing from {len(assessed_sources)} public academic, institutional, and technical sources, we synthesize foundational paradigms, "
-            f"cross-compare contemporary benchmarks, and isolate key points of scholarly consensus alongside conflicting empirical claims. "
-            f"We identify {len(research_gaps)} critical unaddressed research gaps—including scalability degradation and evaluation deficits—and "
-            f"propose the {methodology_data.get('framework_name', 'Decoupled Adaptive Framework')}. Furthermore, we articulate a comprehensive suite "
-            f"of proposed validation experiments with testable hypotheses, datasets, baselines, and quantitative metrics to guide future empirical validation."
-        )
-
-        intro = (
-            f"In recent years, {topic} has captured significant attention across scholarly inquiry and industrial research. "
-            f"As underlying computational models expand in scale and complexity, researchers face intricate system-level trade-offs that "
-            f"challenge conventional assumptions. Although empirical advancements continue to proliferate, the absence of unified synthesis "
-            f"obscures true state-of-the-art limitations. This study addresses this challenge by establishing an evidence-grounded review of "
-            f"contemporary literature, isolating critical research gaps, and establishing a formalized methodological roadmap complete with testable hypotheses."
-        )
-
-        conclusion = (
-            f"This autonomous investigation into {topic} provides a rigorous synthesis of empirical breakthroughs and persistent systemic bottlenecks. "
-            f"By grounding our analysis in {len(assessed_sources)} public sources, we delineated core areas of scholarly agreement alongside active debates "
-            f"regarding scalability and out-of-distribution robustness. The proposed methodology and associated experimental validation suite offer an "
-            f"actionable empirical blueprint for future research cohorts to validate architectural enhancements. Continued investigation along these "
-            f"structured trajectories is vital for realizing dependable, high-efficiency systems in {topic}."
-        )
+        if len(assessed_sources) > 0:
+            problem_statement = (
+                f"Despite accelerating developments in {topic}, the field is hindered by fragmented benchmark reporting, "
+                f"inconsistent baseline standardization, and unresolved trade-offs between computational overhead and empirical robustness. "
+                f"Without a unified systematic synthesis and rigorous empirical validation protocols, deploying such systems in mission-critical "
+                f"and high-concurrency environments remains fraught with performance unpredictability."
+            )
+            abstract = (
+                f"This paper presents an autonomous systematic inquiry into {topic}. "
+                f"Drawing from {len(assessed_sources)} public academic, institutional, and technical sources, we synthesize foundational paradigms, "
+                f"cross-compare contemporary benchmarks, and isolate key points of scholarly consensus alongside conflicting empirical claims. "
+                f"We identify {len(research_gaps)} critical unaddressed research gaps—including scalability degradation and evaluation deficits—and "
+                f"propose the {methodology_data.get('framework_name', 'Decoupled Adaptive Framework')}. Furthermore, we articulate a comprehensive suite "
+                f"of proposed validation experiments with testable hypotheses, datasets, baselines, and quantitative metrics to guide future empirical validation."
+            )
+            intro = (
+                f"In recent years, {topic} has captured significant attention across scholarly inquiry and industrial research. "
+                f"As underlying computational models expand in scale and complexity, researchers face intricate system-level trade-offs that "
+                f"challenge conventional assumptions. Although empirical advancements continue to proliferate, the absence of unified synthesis "
+                f"obscures true state-of-the-art limitations. This study addresses this challenge by establishing an evidence-grounded review of "
+                f"contemporary literature, isolating critical research gaps, and establishing a formalized methodological roadmap complete with testable hypotheses."
+            )
+            conclusion = (
+                f"This autonomous investigation into {topic} provides a rigorous synthesis of empirical breakthroughs and persistent systemic bottlenecks. "
+                f"By grounding our analysis in {len(assessed_sources)} public sources, we delineated core areas of scholarly agreement alongside active debates "
+                f"regarding scalability and out-of-distribution robustness. The proposed methodology and associated experimental validation suite offer an "
+                f"actionable empirical blueprint for future research cohorts to validate architectural enhancements. Continued investigation along these "
+                f"structured trajectories is vital for realizing dependable, high-efficiency systems in {topic}."
+            )
+        else:
+            problem_statement = (
+                f"This investigation focuses on '{topic}'. However, external public web search yielded 0 accessible sources. "
+                "In strict adherence to academic integrity protocols, no unverified claims or synthetic citations are asserted. "
+                "The research questions and proposed methodology below outline the theoretical blueprint for subsequent empirical validation."
+            )
+            abstract = (
+                f"This document presents an autonomous research formulation for '{topic}'. "
+                "Note: Web search returned 0 accessible sources during this execution. Per KLEIN AI research integrity standards, "
+                "no citations, empirical benchmarks, or source claims were fabricated. The report formalizes primary research objectives, "
+                f"identifies {len(research_gaps)} theoretical gap dimensions, and establishes a testable methodological framework pending live source retrieval."
+            )
+            intro = (
+                f"The domain of {topic} presents critical technical challenges and conceptual opportunities. "
+                "This study establishes an autonomous research plan, formalizing research questions and proposed methodological architectures. "
+                "To establish grounded empirical comparisons, live source gathering should be retried with active search credentials."
+            )
+            conclusion = (
+                f"This preliminary formulation for '{topic}' articulates foundational research questions, conceptual research gaps, "
+                "and an actionable proposed methodology suite. Future iterations should incorporate empirical findings from live web search "
+                "to evaluate benchmark performance against established baselines."
+            )
 
         return {
             "topic": topic,
@@ -281,6 +283,8 @@ class ResearchOrchestrator:
             "search_queries": initial_queries,
             "sources": assessed_sources,
             "sources_count": len(assessed_sources),
+            "search_failed": search_failed,
+            "search_warning": search_warning,
             "source_summaries": analysis_data.get("source_summaries", []),
             "comparative_analysis": analysis_data.get("comparative_analysis", []),
             "consensus_points": analysis_data.get("consensus_points", []),

@@ -1,5 +1,5 @@
 """
-Demonstration & QA Verification Script for Klein AI — ResearchMate AI.
+Demonstration & QA Verification Script for KLEIN AI.
 Executes the required demonstration topics:
 1. 'Impact of Artificial Intelligence on Cybersecurity in Healthcare Systems.'
 2. 'Applications of Artificial Intelligence in Healthcare.'

@@ -1,7 +1,7 @@
-# Klein AI — ResearchMate AI: Technical Project Documentation
+# KLEIN AI: Technical Project Documentation
 
 ## Executive Summary
-**Klein AI — ResearchMate AI** is an autonomous AI research system designed to bridge the gap between superficial conversational AI and rigorous academic literature synthesis. Built with Python 3, Streamlit, Google Gemini (`google-genai`), Tavily Search, BeautifulSoup, ReportLab, and `python-pptx`, the system performs automated topic decomposition, public web searching, full-text scraping, cross-source comparative synthesis, empirical evidence anchoring, research gap identification, methodology design, and publication compilation.
+**KLEIN AI** is an autonomous AI research system designed to bridge the gap between superficial conversational AI and rigorous academic literature synthesis. Built with Python 3, Streamlit, Google Gemini (`google-genai`), Tavily Search, BeautifulSoup, ReportLab, and `python-pptx`, the system performs automated topic decomposition, public web searching, full-text scraping, cross-source comparative synthesis, empirical evidence anchoring, research gap identification, methodology design, and publication compilation.
 
 ---
 

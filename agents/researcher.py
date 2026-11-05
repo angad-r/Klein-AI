@@ -1,5 +1,5 @@
 """
-Web Research Agent for Klein AI — ResearchMate AI.
+Web Research Agent for KLEIN AI.
 Orchestrates multi-query search, deduplication, webpage text extraction,
 and accessibility tagging.
 """

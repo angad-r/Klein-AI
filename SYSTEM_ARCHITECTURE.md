@@ -1,8 +1,8 @@
-# Klein AI — ResearchMate AI: System Architecture Specification
+# KLEIN AI: System Architecture Specification
 
 ## 1. Architectural Overview
 
-ResearchMate AI is designed as a **decoupled, multi-agent autonomous system**. Rather than relying on a monolithic prompt or an opaque multi-layer framework, it coordinates modular Python agents through a centralized **Research Orchestrator** and a typed **Tool Registry**.
+KLEIN AI is designed as a **decoupled, multi-agent autonomous system**. Rather than relying on a monolithic prompt or an opaque multi-layer framework, it coordinates modular Python agents through a centralized **Research Orchestrator** and a typed **Tool Registry**.
 
 ```mermaid
 flowchart TD
@@ -54,7 +54,7 @@ flowchart TD
 
 ## 2. Key Differences: Conversational Chatbot vs. Autonomous Research Agent
 
-| Capability | Standard Conversational Chatbot | Klein AI — ResearchMate AI |
+| Capability | Standard Conversational Chatbot | KLEIN AI |
 |---|---|---|
 | **Web Research** | None or single ungrounded query | Multi-query, multi-angle search via Tavily with adaptive deepening |
 | **Evidence Grounding** | Generates plausible-sounding text from memory | Anchors every claim to extracted source quotes with confidence ratings |

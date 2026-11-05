@@ -1,5 +1,5 @@
 """
-Report Generator for Klein AI — ResearchMate AI.
+Report Generator for KLEIN AI.
 Produces publication-grade Markdown artifacts formatted into 17 academic sections:
 1. Title Page / Header
 2. Abstract
@@ -112,7 +112,7 @@ def generate_all_markdown_reports(report_data: Dict[str, Any], output_dir: Path 
     # 1. Complete research_report.md (17 SECTIONS)
     full_report_content = f"""# {title}
 
-**Klein AI — ResearchMate AI** | Autonomous Scientific Research Dossier  
+**KLEIN AI** | Autonomous Scientific Research Dossier  
 *Topic:* {topic}  
 *Engine:* Gemini AI + Tavily Web Intelligence | *Depth:* {report_data.get('depth', 'Standard')}
 

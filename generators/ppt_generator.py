@@ -1,5 +1,5 @@
 """
-PowerPoint Presentation Generator for Klein AI — ResearchMate AI.
+PowerPoint Presentation Generator for KLEIN AI.
 Produces a 12-slide publication-grade 16:9 presentation adhering to the exact required outline:
 Slide 1: Title
 Slide 2: Research Background
@@ -39,7 +39,7 @@ def _apply_dark_bg(slide, prs):
     return shape
 
 
-def _add_header(slide, title_text: str, category_text: str = "KLEIN AI — RESEARCHMATE AI • AUTONOMOUS INVESTIGATION"):
+def _add_header(slide, title_text: str, category_text: str = "KLEIN AI • AUTONOMOUS INVESTIGATION"):
     cat_box = slide.shapes.add_textbox(Inches(0.8), Inches(0.4), Inches(11.5), Inches(0.35))
     tf_c = cat_box.text_frame
     tf_c.word_wrap = True
@@ -89,7 +89,7 @@ def generate_presentation(report_data: Dict[str, Any], output_path: str = None) 
     tf1.word_wrap = True
 
     p0 = tf1.paragraphs[0]
-    p0.text = "KLEIN AI — RESEARCHMATE AI"
+    p0.text = "KLEIN AI"
     p0.font.bold = True
     p0.font.size = Pt(13)
     p0.font.color.rgb = COLOR_ACCENT_VIOLET

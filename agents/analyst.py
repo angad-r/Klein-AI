@@ -1,5 +1,5 @@
 """
-Research Analyst Agent for Klein AI — ResearchMate AI.
+Research Analyst Agent for KLEIN AI.
 Summarizes individual sources, extracts empirical findings and limitations,
 compares conflicting viewpoints, and synthesizes scholarly consensus.
 """

@@ -1,5 +1,5 @@
 """
-Source Quality Assessor for Klein AI — ResearchMate AI.
+Source Quality Assessor for KLEIN AI.
 Evaluates collected sources for:
 - Source Type Classification (Academic Preprint, Peer-reviewed, Official Tech Spec, Industry Report, Web News/Blog)
 - Credibility Tier (High Authority, Peer Reviewed, Moderate, Requires Caution)

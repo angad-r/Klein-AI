@@ -1,17 +1,7 @@
 """
-Evidence Extractor & Claim Verifier for Klein AI — ResearchMate AI.
+Evidence Extractor & Claim Verifier for KLEIN AI.
 Extracts grounded scientific claims anchored directly to extracted passages,
-evaluating empirical confidence:
-{
-  "claim": "Research finding",
-  "source_title": "Original source title",
-  "source_url": "Original URL",
-  "evidence": "Supporting extracted passage",
-  "publication_date": "Available date",
-  "confidence": "Supported / Limited / Unverified",
-  "source_type": "...",
-  "citation_index": 1
-}
+evaluating empirical confidence.
 """
 import re
 import json
@@ -30,7 +20,11 @@ def extract_evidence_items(
 ) -> List[Dict[str, Any]]:
     """
     Extracts structured evidence items mapping empirical claims to exact extracted passages.
+    Returns empty list if no sources are provided.
     """
+    if not sources:
+        return []
+
     # Build text blocks for top 6 sources
     passages = []
     for idx, s in enumerate(sources[:6], 1):

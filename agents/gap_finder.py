@@ -1,5 +1,5 @@
 """
-Research Gap Agent for Klein AI — ResearchMate AI.
+Research Gap Agent for KLEIN AI.
 Pinpoints critical unaddressed bottlenecks by analyzing:
 - Repeated limitations across sources
 - Contradictory empirical findings

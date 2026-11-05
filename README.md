@@ -1,13 +1,13 @@
-# Klein AI — ResearchMate AI 🎓🔬
+# KLEIN AI 🎓🔬
 > **Tagline:** One Topic. Complete Research. Powered by AI.
 
 ---
 
 ## 1. Project Title
-**Klein AI — ResearchMate AI: Autonomous Academic AI Research Assistant**
+**KLEIN AI: Autonomous Academic AI Research Assistant**
 
 ## 2. Project Overview
-ResearchMate AI is a full-stack, autonomous artificial intelligence research agent. Given a single research topic, the system automatically analyzes the inquiry, formulates formal academic objectives and research questions ($RQ_1-RQ_4$), executes multi-engine public web searches via Tavily, evaluates source credibility, extracts accessible text using BeautifulSoup, synthesizes cross-source evidence using Google Gemini, pinpoints 7-dimension research gaps, proposes novel architectural methodologies with formal experimental protocols, and compiles publication-grade deliverables—including an academic 17-section PDF report, a 12-slide PowerPoint presentation deck, and a Markdown dossier suite.
+KLEIN AI is a full-stack, autonomous artificial intelligence research agent. Given a single research topic, the system automatically analyzes the inquiry, formulates formal academic objectives and research questions ($RQ_1-RQ_4$), executes multi-engine public web searches via Tavily, evaluates source credibility, extracts accessible text using BeautifulSoup, synthesizes cross-source evidence using Google Gemini, pinpoints 7-dimension research gaps, proposes novel architectural methodologies with formal experimental protocols, and compiles publication-grade deliverables—including an academic 17-section PDF report, a 12-slide PowerPoint presentation deck, and a Markdown dossier suite.
 
 ## 3. Problem Statement
 Academic literature review and state-of-the-art synthesis represent massive computational and cognitive bottlenecks for researchers, students, and engineers. Traditional manual literature searching is fragmented across proprietary databases, susceptible to publication bias, slow, and prone to citation errors. Conversely, standard conversational Large Language Model chatbots hallucinate non-existent citations, cannot search the live public internet autonomously, fail to extract full-page textual evidence, and conflate speculative opinions with verified scientific claims.

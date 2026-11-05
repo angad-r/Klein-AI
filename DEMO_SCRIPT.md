@@ -1,4 +1,4 @@
-# Klein AI (ResearchMate AI) — 5-Minute Live Project Demonstration Script
+# Klein AI (KLEIN AI) — 5-Minute Live Project Demonstration Script
 
 **Project Title:** Klein AI: Autonomous AI-Powered Web Research Assistant  
 **Presentation Duration:** 5 Minutes  
@@ -34,7 +34,7 @@
 ### Minute 0:00 – 1:00 | The Problem & The Topic Decomposition
 
 #### What You Do:
-1. Point to the header banner: **Klein AI — ResearchMate AI**.
+1. Point to the header banner: **KLEIN AI**.
 2. Type or select the benchmark research topic into the topic input box:
    > `"Impact of Artificial Intelligence on Cybersecurity in Healthcare Systems"`
 3. Select Research Depth: **"Standard Research (10 Sources)"**.
@@ -43,7 +43,7 @@
 #### What You Say:
 > *"Respected evaluators, today conducting an academic literature review requires a researcher to spend 15 to 20 hours manually searching Google Scholar, reading dense papers, filtering paywalls, identifying research gaps, and formatting citations.*
 >
-> *We built **Klein AI (ResearchMate AI)** — an autonomous research agent that solves this in under 90 seconds. Notice what just happened when I clicked 'Start Research':*
+> *We built **Klein AI (KLEIN AI)** — an autonomous research agent that solves this in under 90 seconds. Notice what just happened when I clicked 'Start Research':*
 >
 > *Klein AI does not just send a single prompt to a chatbot. Its first cognitive phase is the **Research Planner**. Look at the activity log: it decomposed our single sentence topic into 4 distinct search queries targeting fundamental mechanisms, real-world hospital vulnerabilities, adversarial AI threats, and mitigation architectures."*
 

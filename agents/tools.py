@@ -1,5 +1,5 @@
 """
-Tool Registry for Klein AI — ResearchMate AI.
+Tool Registry for KLEIN AI.
 Provides structured, typed tools for the autonomous research agent:
 - search_web(query)
 - extract_webpage(url)

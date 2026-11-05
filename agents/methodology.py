@@ -1,5 +1,5 @@
 """
-Methodology Agent for Klein AI — ResearchMate AI.
+Methodology Agent for KLEIN AI.
 Generates structured empirical research methodology:
 - Research Design & Research Approach
 - Formal Hypotheses
