@@ -1,7 +1,7 @@
 # KLEIN AI 🎓🔬
 > **Tagline:** One Topic. Complete Research. Powered by AI.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
 ---
 
