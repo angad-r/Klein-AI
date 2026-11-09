@@ -1,7 +1,6 @@
 # KLEIN AI 🎓🔬
 > **One Topic. Complete Research. Powered by AI.**
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+> 
 [![Python: 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 [![Framework: Streamlit](https://img.shields.io/badge/UI-Streamlit-red.svg)](https://streamlit.io/)
 [![LLM: Google Gemini](https://img.shields.io/badge/LLM-Gemini%203.8%20Flash-orange.svg)](https://aistudio.google.com/)
