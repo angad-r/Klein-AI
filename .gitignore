@@ -9,9 +9,13 @@ venv/
 *.db
 outputs/
 downloads/
+.local_archive/
 .DS_Store
 *.pdf
 *.pptx
+!docs/academic-submission/*.pdf
+!docs/academic-submission/*.pptx
+!docs/academic-submission/*.docx
 !PROJECT_REPORT.pdf
 !PROJECT_PRESENTATION.pptx
 !demo_assets/

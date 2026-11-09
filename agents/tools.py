@@ -32,12 +32,18 @@ logger = logging.getLogger("KleinAI.ToolRegistry")
 class ToolRegistry:
     """
     Central registry for autonomous agent tool execution with validation,
-    telemetry logging, and error resilience.
+    telemetry logging, model propagation, and error resilience.
     """
 
-    def __init__(self, gemini_key: Optional[str] = None, tavily_key: Optional[str] = None):
+    def __init__(
+        self,
+        gemini_key: Optional[str] = None,
+        tavily_key: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
         self.gemini_key = gemini_key or config.GEMINI_API_KEY
         self.tavily_key = tavily_key or config.TAVILY_API_KEY
+        self.model = model or config.GEMINI_MODEL
         self.execution_history: List[Dict[str, Any]] = []
 
     def _record_execution(self, tool_name: str, params: Dict[str, Any], duration: float, success: bool, error: Optional[str] = None):
@@ -56,7 +62,7 @@ class ToolRegistry:
         try:
             if not query or not query.strip():
                 raise ValueError("Query string cannot be empty.")
-            
+
             results = []
             if config.is_tavily_available(self.tavily_key):
                 try:
@@ -66,7 +72,7 @@ class ToolRegistry:
                     results = search_fallback_ddg(query.strip(), max_results=max_results)
             else:
                 results = search_fallback_ddg(query.strip(), max_results=max_results)
-                
+
             self._record_execution("search_web", {"query": query, "max_results": max_results}, time.time() - start, True)
             return results
         except Exception as e:
@@ -89,7 +95,7 @@ class ToolRegistry:
         """Tool: analyse_source(source) — Extracts key findings, quality assessment, and limitations."""
         start = time.time()
         try:
-            analysis = analyze_sources(topic, [source], gemini_key=self.gemini_key)
+            analysis = analyze_sources(topic, [source], gemini_key=self.gemini_key, model=self.model)
             summaries = analysis.get("source_summaries", [])
             res = summaries[0] if summaries else {
                 "source_index": 1,
@@ -112,7 +118,7 @@ class ToolRegistry:
         """Tool: compare_sources(sources) — Compares findings, consensus, and conflicts across sources."""
         start = time.time()
         try:
-            res = analyze_sources(topic, sources, gemini_key=self.gemini_key)
+            res = analyze_sources(topic, sources, gemini_key=self.gemini_key, model=self.model)
             self._record_execution("compare_sources", {"sources_count": len(sources)}, time.time() - start, True)
             return res
         except Exception as e:
@@ -126,7 +132,7 @@ class ToolRegistry:
             topic = data.get("topic", "")
             analysis = data.get("analysis", {})
             sources = data.get("sources", [])
-            review = generate_literature_review(topic, analysis, sources, gemini_key=self.gemini_key)
+            review = generate_literature_review(topic, analysis, sources, gemini_key=self.gemini_key, model=self.model)
             self._record_execution("generate_literature_review", {"topic": topic}, time.time() - start, True)
             return review
         except Exception as e:
@@ -139,7 +145,7 @@ class ToolRegistry:
         try:
             topic = data.get("topic", "")
             analysis = data.get("analysis", {})
-            gaps = find_research_gaps(topic, analysis, gemini_key=self.gemini_key)
+            gaps = find_research_gaps(topic, analysis, gemini_key=self.gemini_key, model=self.model)
             self._record_execution("identify_research_gaps", {"topic": topic}, time.time() - start, True)
             return gaps
         except Exception as e:
@@ -152,7 +158,7 @@ class ToolRegistry:
         try:
             topic = data.get("topic", "")
             gaps = data.get("gaps", [])
-            meth = propose_methodology(topic, gaps, gemini_key=self.gemini_key)
+            meth = propose_methodology(topic, gaps, gemini_key=self.gemini_key, model=self.model)
             self._record_execution("propose_methodology", {"topic": topic}, time.time() - start, True)
             return meth
         except Exception as e:

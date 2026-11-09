@@ -22,6 +22,7 @@ def propose_methodology(
     topic: str,
     gaps: List[Dict[str, Any]],
     gemini_key: Optional[str] = None,
+    model: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Generates comprehensive structured methodology addressing identified gaps."""
     gaps_str = "\n".join([f"- {g.get('gap_title', '')}: {g.get('explanation', '')}" for g in gaps])
@@ -57,7 +58,7 @@ Return ONLY valid JSON.
 """
     if config.is_gemini_available(gemini_key):
         try:
-            raw = call_gemini(prompt, api_key=gemini_key)
+            raw = call_gemini(prompt, api_key=gemini_key, model=model)
             data = extract_json_from_text(raw)
             if data and isinstance(data, dict) and "proposed_experiments" in data:
                 return data

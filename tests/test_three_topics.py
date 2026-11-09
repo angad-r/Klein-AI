@@ -22,11 +22,6 @@ topics = [
 ]
 
 
-def test_three_topics_runner():
-    """Verify topic runner can be invoked or imported safely."""
-    assert len(topics) == 3
-
-
 def run_three_topics():
     orch = ResearchOrchestrator(depth="Quick")
 

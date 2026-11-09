@@ -82,6 +82,21 @@ def validate_citations_and_sources(
 
     coverage_pct = (len(cited_numbers) / total_sources * 100) if total_sources > 0 else 0.0
 
+    # Claim-level factual assertion audit
+    # Split text into sentences, excluding section headers and bullet points
+    raw_sentences = [
+        s.strip() for s in re.split(r"(?<=[.!?])\s+", literature_review_text)
+        if s.strip() and not s.strip().startswith("#") and len(s.strip()) > 30
+    ]
+    total_factual_claims = len(raw_sentences)
+    claims_with_citations = [s for s in raw_sentences if re.search(r"\[[0-9,\s\-]+\]", s)]
+    unsupported_claims = [s for s in raw_sentences if not re.search(r"\[[0-9,\s\-]+\]", s)]
+
+    claim_coverage_pct = (
+        round((len(claims_with_citations) / total_factual_claims * 100), 1)
+        if total_factual_claims > 0 else 0.0
+    )
+
     if total_sources == 0:
         integrity_status = "WARNING_ORPHAN_CITATIONS" if unverified_citations else "NO_SOURCES_COLLECTED"
         notes = "No external web sources were collected. No verified citations asserted."
@@ -93,9 +108,16 @@ def validate_citations_and_sources(
         "total_sources_collected": total_sources,
         "total_sources_cited": len(cited_numbers),
         "citation_coverage_percent": round(coverage_pct, 1),
+        "source_coverage_percent": round(coverage_pct, 1),
+        "total_factual_claims": total_factual_claims,
+        "claims_with_citations": len(claims_with_citations),
+        "unsupported_claims_count": len(unsupported_claims),
+        "unsupported_claims": unsupported_claims[:5],  # top samples for audit
+        "claim_citation_coverage_percent": claim_coverage_pct,
         "all_citations": valid_citations,
         "missing_metadata_flags": missing_metadata_flags,
         "unverified_citations": unverified_citations,
+        "invalid_references": unverified_citations,
         "integrity_status": integrity_status,
         "notes": notes,
     }

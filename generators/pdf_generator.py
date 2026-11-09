@@ -71,7 +71,7 @@ class NumberedCanvas(canvas.Canvas):
         # Running footer on all pages
         page_str = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(558, 36, page_str)
-        self.drawString(54, 36, "Generated autonomously by Klein AI • KLEIN AI Suite")
+        self.drawString(54, 36, "Generated autonomously by KLEIN AI • Research Suite")
         self.setStrokeColor(colors.HexColor("#CBD5E1"))
         self.setLineWidth(0.5)
         self.line(54, 48, 558, 48)
@@ -79,10 +79,18 @@ class NumberedCanvas(canvas.Canvas):
         self.restoreState()
 
 
-def clean_markdown_for_pdf(text: str) -> str:
+def clean_markdown_for_pdf(text: Any) -> str:
     """Sanitizes text for ReportLab Paragraph compatibility."""
     if not text:
         return ""
+    if isinstance(text, dict):
+        if "issue" in text or "position_a" in text:
+            text = f"<b>{text.get('issue', text.get('topic', 'Debated Finding'))}:</b> Position A: {text.get('position_a', '')} vs Position B: {text.get('position_b', '')}"
+        else:
+            text = " ".join(f"<b>{k}:</b> {v}" for k, v in text.items())
+    elif not isinstance(text, str):
+        text = str(text)
+
     t = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", text)
     t = re.sub(r"\*(.*?)\*", r"<i>\1</i>", t)
     t = re.sub(r"^#{1,6}\s*(.*)", r"<b>\1</b>", t, flags=re.MULTILINE)

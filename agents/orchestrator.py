@@ -1,32 +1,42 @@
 """
 Central Research Orchestrator for KLEIN AI.
-Features intelligent multi-agent decision-making:
-- Tool Calling via ToolRegistry
-- Adaptive secondary search if source count is low
-- Source Quality Assessment & Credibility Scoring
-- Evidence-Based Claim Extraction (grounded passages & confidence)
-- Conflict Detection & Consensus Reporting
-- Complete 17-section structured academic compilation
-- Zero Fabrication: Never synthesizes fake URLs, DOIs, or papers if search fails
+Features a multi-stage autonomous web research engine:
+- Intelligent Research Planning (domain, context, problem, terminology, strategy, 8-12 queries)
+- Bounded Autonomous Research Loop (max 3 rounds, domain diversity, query deduplication)
+- Multi-engine search: Tavily Search API with public DuckDuckGo fallback
+- Content Extraction: Tavily Extract API with BeautifulSoup4 fallback
+- 6-Dimension Source Quality Assessment (Relevance != Credibility)
+- Structured Evidence Extraction (findings, methodology, datasets, sample size, numerical metrics)
+- Cross-Source Analysis (common findings, consensus, conflicting evidence, methodological divergence)
+- Adaptive Subtopic Coverage Tracking & Query Deepening
+- Academic Compilation (17-section ReportLab PDF, 12-slide PPTX, Markdown, SQLite)
+- Strict Research Integrity: Zero fabrication of synthetic papers or citations.
 """
+import re
 import time
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional, Callable, List
+from typing import Dict, Any, Optional, Callable, List, Set
 
 import config
 from agents.tools import ToolRegistry
 from agents.planner import plan_research
+from research.search import deduplicate_sources, rank_and_prioritize_sources, search_tavily, search_fallback_ddg
+from research.extraction import enrich_sources
 from research.source_assessor import enrich_sources_with_quality
 from research.evidence_extractor import extract_evidence_items
 from research.citation_validator import validate_citations_and_sources
+from agents.analyst import analyze_sources
+from agents.literature_review import generate_literature_review
+from agents.gap_finder import find_research_gaps
+from agents.methodology import propose_methodology
 
 logger = logging.getLogger("KleinAI.Orchestrator")
 
 
 class ResearchOrchestrator:
     """
-    Intelligent Autonomous Orchestrator controlling the end-to-end research lifecycle.
+    Intelligent Autonomous Orchestrator controlling the Day 2 multi-stage web research engine.
     """
 
     def __init__(
@@ -38,15 +48,15 @@ class ResearchOrchestrator:
         activity_log_callback: Optional[Callable[[str, str], None]] = None,
         model: Optional[str] = None,
     ):
-        self.gemini_key = gemini_api_key or config.GEMINI_API_KEY
-        self.tavily_key = tavily_api_key or config.TAVILY_API_KEY
+        self.gemini_key = gemini_api_key or config.get_gemini_api_key()
+        self.tavily_key = tavily_api_key or config.get_tavily_api_key()
         self.depth = depth
         self.status_cb = status_callback
         self.log_cb = activity_log_callback
         self.model = model or config.GEMINI_MODEL
         self.logs: List[Dict[str, str]] = []
         self.is_demo = config.is_demo_mode(self.gemini_key, self.tavily_key)
-        self.tools = ToolRegistry(gemini_key=self.gemini_key, tavily_key=self.tavily_key)
+        self.tools = ToolRegistry(gemini_key=self.gemini_key, tavily_key=self.tavily_key, model=self.model)
 
     def _log(self, stage: str, message: str, progress: float):
         entry = {
@@ -64,147 +74,217 @@ class ResearchOrchestrator:
 
     def run_pipeline(self, topic: str) -> Dict[str, Any]:
         """
-        Executes the intelligent autonomous research pipeline without fabrication.
+        Executes the Day 2 multi-stage autonomous web research engine.
         """
         topic = topic.strip()
         if not topic:
             raise ValueError("Research topic cannot be empty.")
 
         start_time = time.time()
-        self._log("INIT", f"Initializing KLEIN AI Autonomous Orchestrator for: '{topic}'", 0.05)
+        self._log("INIT", f"Initializing KLEIN AI Autonomous Research Engine for: '{topic}' (Model: {self.model})", 0.04)
 
         # -------------------------------------------------------------
-        # STAGE 1: Research Planning & Query Generation
+        # STAGE 1: Intelligent Research Planning
         # -------------------------------------------------------------
-        self._log("PLANNER", "Formulating research objectives, questions (RQ1-RQ4), and search queries...", 0.12)
+        self._log("PLANNER", "Formulating research domain, context, core problem, RQs, and 8–12 diverse queries...", 0.10)
         plan_data = plan_research(
             topic=topic,
             depth=self.depth,
             gemini_key=self.gemini_key,
+            model=self.model,
         )
 
         initial_queries = plan_data.get("search_queries", [])
-        self._log("PLANNER", f"Formulated {len(initial_queries)} initial queries across thematic pillars.", 0.20)
+        subtopics = plan_data.get("subtopics", [])
+        self._log("PLANNER", f"Formulated {len(initial_queries)} initial queries across {len(subtopics)} thematic subtopics.", 0.16)
 
         # -------------------------------------------------------------
-        # STAGE 2: Web Search & Adaptive Deepening
+        # STAGE 2: Bounded Multi-Round Autonomous Research Loop
         # -------------------------------------------------------------
-        self._log("RESEARCHER", f"Dispatching Web Search via Tavily / Public Engine (Depth: {self.depth})...", 0.28)
-        raw_sources = []
-        for q in initial_queries:
-            results = self.tools.search_web(q, max_results=config.SEARCH_DEPTH_CONFIG[self.depth]["results_per_query"])
-            raw_sources.extend(results)
+        depth_cfg = config.SEARCH_DEPTH_CONFIG.get(self.depth, config.SEARCH_DEPTH_CONFIG["Standard"])
+        max_rounds = depth_cfg.get("max_rounds", 3)
+        max_sources = depth_cfg.get("max_sources", 35)
+        results_per_query = depth_cfg.get("results_per_query", 5)
+        max_extract = depth_cfg.get("max_extract", 18)
+        min_target = 6 if self.depth == "Quick" else 15
 
-        # Remove duplicate URLs
-        from research.search import deduplicate_sources
-        unique_sources = deduplicate_sources(raw_sources)
-        self._log("RESEARCHER", f"Discovered {len(unique_sources)} unique candidate sources.", 0.38)
+        executed_queries: Set[str] = set()
+        collected_sources: List[Dict[str, Any]] = []
+        round_history: List[Dict[str, Any]] = []
+        current_queries = list(initial_queries)
 
-        # INTELLIGENT DECISION: If source count is low (1-3), trigger adaptive secondary queries
-        if 0 < len(unique_sources) < 4:
-            self._log("ADAPTIVE_SEARCH", "Source count below threshold (<4). Formulating secondary deepening queries...", 0.42)
-            deepening_queries = [
-                f"{topic} empirical evaluation benchmark study",
-                f"{topic} state of the art survey paper arXiv",
-            ]
-            for dq in deepening_queries:
-                extra = self.tools.search_web(dq, max_results=3)
-                unique_sources.extend(extra)
-            unique_sources = deduplicate_sources(unique_sources)
-            self._log("ADAPTIVE_SEARCH", f"Expanded evidence pool to {len(unique_sources)} unique sources.", 0.45)
+        analysis_data: Dict[str, Any] = {}
+        evidence_items: List[Dict[str, Any]] = []
+        coverage_assessment: Dict[str, Any] = {}
 
-        # RESEARCH INTEGRITY: If search fails completely, DO NOT FABRICATE SOURCES.
-        search_failed = (len(unique_sources) == 0)
+        for round_idx in range(1, max_rounds + 1):
+            # Filter unexecuted queries
+            new_queries = [q.strip() for q in current_queries if q.strip() and q.strip().lower() not in executed_queries]
+            if not new_queries:
+                self._log("LOOP", f"All queries executed. Finalizing research loop at round {round_idx-1}.", 0.45)
+                break
+
+            engine_label = "Tavily Search API" if config.is_tavily_available(self.tavily_key) else "Public Web Engine"
+            progress_pct = 0.18 + (round_idx - 1) * 0.10
+            self._log("SEARCH", f"Iteration {round_idx}/{max_rounds}: Executing {len(new_queries)} queries via {engine_label}...", progress_pct)
+
+            batch_raw: List[Dict[str, Any]] = []
+            for q_idx, q in enumerate(new_queries, 1):
+                executed_queries.add(q.lower())
+                # Search using tools.search_web or direct search_tavily
+                results = self.tools.search_web(q, max_results=results_per_query)
+                batch_raw.extend(results)
+
+            # Deduplicate and enforce domain diversity
+            merged = collected_sources + batch_raw
+            unique_sources = deduplicate_sources(merged, max_per_domain=config.MAX_SOURCES_PER_DOMAIN)
+            collected_sources = unique_sources
+
+            self._log("EXTRACTION", f"Iteration {round_idx}: Extracting content & verifying accessibility for top {min(len(collected_sources), max_extract)} sources...", progress_pct + 0.05)
+            # Content extraction via Tavily extract + BeautifulSoup fallback
+            extract_result = enrich_sources(
+                collected_sources,
+                max_to_extract=max_extract,
+                tavily_key=self.tavily_key,
+            )
+            collected_sources = extract_result.get("sources", collected_sources)
+
+            # 6-Dimension Source Quality Assessment
+            self._log("ASSESSOR", f"Iteration {round_idx}: Evaluating 6-dimension quality (Relevance, Authority, Recency, etc.)...", progress_pct + 0.07)
+            collected_sources = enrich_sources_with_quality(collected_sources, topic=topic)
+
+            # Structured Evidence Extraction
+            evidence_items = extract_evidence_items(
+                topic=topic,
+                sources=collected_sources,
+                gemini_key=self.gemini_key,
+                model=self.model,
+            )
+
+            # Cross-Source Synthesis
+            analysis_data = analyze_sources(
+                topic=topic,
+                sources=collected_sources,
+                gemini_key=self.gemini_key,
+                model=self.model,
+            )
+
+            # Coverage Assessment
+            subtopic_hits = {}
+            for sub in subtopics:
+                sub_words = set(re.findall(r"\b[A-Za-z]{4,}\b", sub.lower()))
+                hits = 0
+                for s in collected_sources:
+                    s_text = (s.get("title", "") + " " + s.get("content", "")).lower()
+                    if any(w in s_text for w in sub_words):
+                        hits += 1
+                subtopic_hits[sub] = hits
+
+            covered_count = sum(1 for hits in subtopic_hits.values() if hits >= 1)
+            coverage_pct = round((covered_count / max(len(subtopics), 1)) * 100, 1)
+
+            round_info = {
+                "round": round_idx,
+                "queries_executed": new_queries,
+                "raw_discovered": len(batch_raw),
+                "total_unique_collected": len(collected_sources),
+                "coverage_percent": coverage_pct,
+            }
+            round_history.append(round_info)
+
+            # Evaluate whether to trigger additional search round
+            uncovered_subtopics = [sub for sub, hits in subtopic_hits.items() if hits < 1]
+            needs_more_coverage = (coverage_pct < 75.0 or len(collected_sources) < min_target)
+            can_continue = (round_idx < max_rounds and len(collected_sources) < max_sources)
+
+            if needs_more_coverage and can_continue:
+                self._log("ADAPTIVE_LOOP", f"Coverage at {coverage_pct}% ({len(collected_sources)} sources). Formulating adaptive deepening queries...", progress_pct + 0.09)
+                current_queries = []
+                for unc in uncovered_subtopics[:2]:
+                    current_queries.append(f"{topic} {unc} empirical benchmark analysis")
+                current_queries.append(f"{topic} state of the art survey ablation metrics")
+            else:
+                self._log("AUTONOMOUS_LOOP", f"Research corpus finalized at Iteration {round_idx} with {len(collected_sources)} unique sources ({coverage_pct}% coverage).", 0.50)
+                break
+
+        # Research Integrity Check: If search failed completely, do NOT fabricate sources
+        search_failed = (len(collected_sources) == 0)
         search_warning = ""
         if search_failed:
             search_warning = (
                 f"Web search returned 0 accessible sources for '{topic}'. "
                 "Per KLEIN AI research integrity protocols, no synthetic or fake paper titles, URLs, or citations were generated. "
-                "Please verify network connectivity and ensure valid search API credentials are configured."
+                "Please verify network connectivity and ensure valid search API credentials are configured in .env."
             )
-            self._log("WARNING", search_warning, 0.48)
+            self._log("WARNING", search_warning, 0.52)
+
+        # Rank sources
+        final_sources = rank_and_prioritize_sources(collected_sources[:max_sources])
+
+        # Subtopic coverage summary
+        coverage_assessment = {
+            "rounds_executed": len(round_history),
+            "total_queries_executed": len(executed_queries),
+            "sources_discovered": len(final_sources),
+            "sources_extracted": sum(1 for s in final_sources if s.get("accessible")),
+            "sources_rejected": sum(1 for s in final_sources if not s.get("accessible")),
+            "coverage_percent": coverage_pct if not search_failed else 0.0,
+            "subtopic_coverage": subtopic_hits if not search_failed else {},
+            "round_history": round_history,
+        }
 
         # -------------------------------------------------------------
-        # STAGE 3: Web Content Extraction & Quality Assessment
+        # STAGE 3: Thematic Literature Review
         # -------------------------------------------------------------
-        self._log("EXTRACTION", "Extracting webpage bodies via BeautifulSoup and auditing accessibility...", 0.50)
-        max_extract = config.SEARCH_DEPTH_CONFIG[self.depth]["max_extract"]
-        inaccessible_count = 0
-
-        for idx, src in enumerate(unique_sources[:max_extract], 1):
-            url = src.get("url", "")
-            if url:
-                parsed = self.tools.extract_webpage(url)
-                if parsed.get("accessible"):
-                    src["content"] = parsed["content"]
-                    src["accessible"] = True
-                else:
-                    inaccessible_count += 1
-                    src["accessible"] = False
-
-        if inaccessible_count > 0:
-            self._log("EXTRACTION", f"Note: {inaccessible_count} sources had restricted access; preserved abstract snippets.", 0.55)
-
-        # Quality assessment
-        assessed_sources = enrich_sources_with_quality(unique_sources)
-        if assessed_sources:
-            self._log("SOURCE_ASSESSOR", f"Assessed source credibility tiers: {len(assessed_sources)} sources classified.", 0.60)
-        else:
-            self._log("SOURCE_ASSESSOR", "Source pool empty. Skipping credibility classification.", 0.60)
-
-        # -------------------------------------------------------------
-        # STAGE 4: Source Analysis, Comparative Matrix & Evidence Extraction
-        # -------------------------------------------------------------
-        self._log("ANALYST", "Comparing findings, isolating consensus points, and identifying conflicting evidence...", 0.66)
-        analysis_data = self.tools.compare_sources(assessed_sources, topic=topic)
-
-        self._log("EVIDENCE_ENGINE", "Extracting grounded claims and anchoring passages to empirical sources...", 0.72)
-        evidence_items = extract_evidence_items(topic=topic, sources=assessed_sources, gemini_key=self.gemini_key)
-
-        # -------------------------------------------------------------
-        # STAGE 5: Thematic Literature Review
-        # -------------------------------------------------------------
-        self._log("LITERATURE_REVIEW", "Synthesizing thematic academic review with exact in-text citations...", 0.78)
+        self._log("LITERATURE_REVIEW", "Synthesizing thematic academic review with exact in-text citations...", 0.65)
         lit_data = {
             "topic": topic,
             "analysis": analysis_data,
-            "sources": assessed_sources,
+            "sources": final_sources,
         }
-        literature_review_text = self.tools.generate_literature_review(lit_data)
+        literature_review_text = generate_literature_review(
+            topic=topic,
+            analysis_data=analysis_data,
+            sources=final_sources,
+            gemini_key=self.gemini_key,
+            model=self.model,
+        )
 
         # -------------------------------------------------------------
-        # STAGE 6: Research Gap Discovery (7 Dimensions)
+        # STAGE 4: Research Gap Discovery (7 Dimensions)
         # -------------------------------------------------------------
-        self._log("GAP_FINDER", "Analyzing repeated limitations & contradictory findings for research gaps...", 0.84)
-        gap_data = {
-            "topic": topic,
-            "analysis": analysis_data,
-        }
-        research_gaps = self.tools.identify_research_gaps(gap_data)
+        self._log("GAP_FINDER", "Analyzing repeated limitations & contradictory findings for research gaps...", 0.75)
+        research_gaps = find_research_gaps(
+            topic=topic,
+            analysis_data=analysis_data,
+            gemini_key=self.gemini_key,
+            model=self.model,
+        )
 
         # -------------------------------------------------------------
-        # STAGE 7: Methodology & Proposed Validation Suite
+        # STAGE 5: Methodology & Proposed Validation Suite
         # -------------------------------------------------------------
-        self._log("METHODOLOGY", "Designing proposed architecture, independent/dependent variables, and experiments...", 0.89)
-        method_data = {
-            "topic": topic,
-            "gaps": research_gaps,
-        }
-        methodology_data = self.tools.propose_methodology(method_data)
+        self._log("METHODOLOGY", "Designing proposed architecture, independent/dependent variables, and experiments...", 0.85)
+        methodology_data = propose_methodology(
+            topic=topic,
+            gaps=research_gaps,
+            gemini_key=self.gemini_key,
+            model=self.model,
+        )
 
         # -------------------------------------------------------------
-        # STAGE 8: Citation Audit & Integrity Verification
+        # STAGE 6: Citation Audit & Integrity Verification
         # -------------------------------------------------------------
-        self._log("CITATION_VALIDATOR", "Auditing citations against collected sources and checking URL coverage...", 0.93)
+        self._log("CITATION_VALIDATOR", "Auditing citations against collected sources and checking URL coverage...", 0.92)
         citation_audit = validate_citations_and_sources(
-            sources=assessed_sources,
+            sources=final_sources,
             literature_review_text=literature_review_text,
         )
 
         elapsed = round(time.time() - start_time, 2)
-        self._log("COMPLETE", f"Autonomous research completed in {elapsed}s across {len(assessed_sources)} verified sources.", 0.96)
+        self._log("COMPLETE", f"Autonomous research completed in {elapsed}s across {len(final_sources)} verified sources.", 0.98)
 
-        # Generate Keywords
+        # Keywords & Metadata
         keywords = [
             topic,
             plan_data.get("domain", "Computational Systems"),
@@ -213,20 +293,23 @@ class ResearchOrchestrator:
             "Scalability Analysis",
             "Algorithmic Modularity",
         ]
+        for term in plan_data.get("technical_terminology", [])[:4]:
+            if term not in keywords:
+                keywords.append(term)
 
         title = plan_data.get("academic_title", f"Autonomous Systematic Investigation into {topic}")
 
-        if len(assessed_sources) > 0:
+        if len(final_sources) > 0:
             problem_statement = (
                 f"Despite accelerating developments in {topic}, the field is hindered by fragmented benchmark reporting, "
                 f"inconsistent baseline standardization, and unresolved trade-offs between computational overhead and empirical robustness. "
                 f"Without a unified systematic synthesis and rigorous empirical validation protocols, deploying such systems in mission-critical "
-                f"and high-concurrency environments remains fraught with performance unpredictability."
+                f"environments remains fraught with performance unpredictability."
             )
             abstract = (
                 f"This paper presents an autonomous systematic inquiry into {topic}. "
-                f"Drawing from {len(assessed_sources)} public academic, institutional, and technical sources, we synthesize foundational paradigms, "
-                f"cross-compare contemporary benchmarks, and isolate key points of scholarly consensus alongside conflicting empirical claims. "
+                f"Drawing from {len(final_sources)} public academic, institutional, and technical sources across {len(round_history)} autonomous search rounds, "
+                f"we synthesize foundational paradigms, cross-compare contemporary benchmarks, and isolate key points of scholarly consensus alongside conflicting empirical claims. "
                 f"We identify {len(research_gaps)} critical unaddressed research gaps—including scalability degradation and evaluation deficits—and "
                 f"propose the {methodology_data.get('framework_name', 'Decoupled Adaptive Framework')}. Furthermore, we articulate a comprehensive suite "
                 f"of proposed validation experiments with testable hypotheses, datasets, baselines, and quantitative metrics to guide future empirical validation."
@@ -240,10 +323,9 @@ class ResearchOrchestrator:
             )
             conclusion = (
                 f"This autonomous investigation into {topic} provides a rigorous synthesis of empirical breakthroughs and persistent systemic bottlenecks. "
-                f"By grounding our analysis in {len(assessed_sources)} public sources, we delineated core areas of scholarly agreement alongside active debates "
+                f"By grounding our analysis in {len(final_sources)} public sources, we delineated core areas of scholarly agreement alongside active debates "
                 f"regarding scalability and out-of-distribution robustness. The proposed methodology and associated experimental validation suite offer an "
-                f"actionable empirical blueprint for future research cohorts to validate architectural enhancements. Continued investigation along these "
-                f"structured trajectories is vital for realizing dependable, high-efficiency systems in {topic}."
+                f"actionable empirical blueprint for future research cohorts to validate architectural enhancements."
             )
         else:
             problem_statement = (
@@ -275,21 +357,39 @@ class ResearchOrchestrator:
             "abstract": abstract,
             "introduction": intro,
             "domain": plan_data.get("domain", "Computational Systems"),
+            "research_context": plan_data.get("research_context", ""),
+            "core_problem": plan_data.get("core_problem", problem_statement),
             "scope_and_motivation": plan_data.get("scope_and_motivation", ""),
             "problem_statement": problem_statement,
             "objectives": plan_data.get("objectives", []),
             "research_questions": plan_data.get("research_questions", []),
-            "subtopics": plan_data.get("subtopics", []),
+            "subtopics": subtopics,
+            "technical_terminology": plan_data.get("technical_terminology", []),
+            "search_strategy": plan_data.get("search_strategy", ""),
+            "expected_evidence_requirements": plan_data.get("expected_evidence_requirements", []),
             "search_queries": initial_queries,
-            "sources": assessed_sources,
-            "sources_count": len(assessed_sources),
+            "executed_queries": list(executed_queries),
+            "search_rounds_completed": len(round_history),
+            "search_max_rounds": max_rounds,
+            "search_coverage_score": (coverage_pct / 100.0) if not search_failed else 0.0,
+            "sources_discovered": len(final_sources),
+            "sources_extracted": sum(1 for s in final_sources if s.get("accessible")),
+            "sources_rejected": sum(1 for s in final_sources if not s.get("accessible")),
+            "sources": final_sources,
+            "sources_count": len(final_sources),
             "search_failed": search_failed,
             "search_warning": search_warning,
             "source_summaries": analysis_data.get("source_summaries", []),
             "comparative_analysis": analysis_data.get("comparative_analysis", []),
             "consensus_points": analysis_data.get("consensus_points", []),
             "conflicting_evidence": analysis_data.get("conflicting_evidence", []),
+            "common_findings": analysis_data.get("common_findings", []),
+            "methodological_differences": analysis_data.get("methodological_differences", []),
+            "dataset_differences": analysis_data.get("dataset_differences", []),
+            "emerging_themes": analysis_data.get("emerging_themes", []),
+            "areas_with_insufficient_evidence": analysis_data.get("areas_with_insufficient_evidence", []),
             "evidence_items": evidence_items,
+            "coverage_assessment": coverage_assessment,
             "literature_review": literature_review_text,
             "research_gaps": research_gaps,
             "methodology": methodology_data,

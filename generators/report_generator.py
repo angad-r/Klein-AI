@@ -26,7 +26,7 @@ import config
 
 def generate_all_markdown_reports(report_data: Dict[str, Any], output_dir: Path = None) -> Dict[str, str]:
     """Generates all specified markdown files."""
-    out = output_dir or config.OUTPUT_DIR
+    out = Path(output_dir) if output_dir else config.OUTPUT_DIR
     out.mkdir(parents=True, exist_ok=True)
 
     title = report_data.get("title", "Autonomous Academic Research Report")
@@ -41,7 +41,13 @@ def generate_all_markdown_reports(report_data: Dict[str, Any], output_dir: Path 
     lit_review = report_data.get("literature_review", "")
     comparative = "\n".join([f"- {c}" for c in report_data.get("comparative_analysis", [])])
     consensus = "\n".join([f"- {c}" for c in report_data.get("consensus_points", [])])
-    conflicts = "\n".join([f"- {c}" for c in report_data.get("conflicting_evidence", [])])
+    conflicts_list = []
+    for c in report_data.get("conflicting_evidence", []):
+        if isinstance(c, dict):
+            conflicts_list.append(f"- **{c.get('issue', c.get('topic', 'Debated Finding'))}:** Position A: {c.get('position_a', '')} vs Position B: {c.get('position_b', '')} (Root Cause: {c.get('explanation', '')})")
+        else:
+            conflicts_list.append(f"- {c}")
+    conflicts = "\n".join(conflicts_list)
 
     # Gaps (7 dimensions)
     gaps = report_data.get("research_gaps", [])

@@ -48,7 +48,7 @@ import config
 # ==============================================================================
 # 1. PROJECT_REPORT.docx GENERATOR (31 SECTIONS)
 # ==============================================================================
-def create_project_report_docx(output_path: str = "PROJECT_REPORT.docx"):
+def create_project_report_docx(output_path: str = "docs/academic-submission/PROJECT_REPORT.docx"):
     doc = Document()
 
     # Configure Margins (1 inch all around)
@@ -363,7 +363,7 @@ def create_project_report_docx(output_path: str = "PROJECT_REPORT.docx"):
     add_body("The technical choices were guided by performance, explainability, and minimalism:")
     add_bullet("Python 3.13: Provides native asynchronous primitives, robust standard library support, and extensive AI SDK ecosystems.")
     add_bullet("Streamlit (v1.35+): Enables rapid, reactive dashboard rendering with custom CSS injection, session state persistence, and native widget reactivity.")
-    add_bullet("Google Gemini API (via google-genai v2.34): Selected for state-of-the-art analytical reasoning, strong structured JSON output adherence, and low latency on gemini-2.5-flash.")
+    add_bullet("Google Gemini API (via google-genai v2.34): Selected for state-of-the-art analytical reasoning, strong structured JSON output adherence, and low latency on gemini-3.8-flash.")
     add_bullet("Tavily API (tavily-python v0.8.5): Purpose-built for LLM agent search, providing high relevance filtering, pre-extracted snippets, and published date metadata.")
     add_bullet("BeautifulSoup4 (v4.15) & Requests: Lightweight, deterministic HTML tree parsing that strips scripts, navigations, and advertisements without requiring heavy headless browsers.")
     add_bullet("ReportLab (v5.1): Industrial-grade PDF compilation enabling two-pass canvas numbering ('Page X of Y'), running headers, and clickable hyperlinks.")
@@ -552,7 +552,7 @@ class AcademicReportNumberedCanvas(canvas.Canvas):
         self.restoreState()
 
 
-def create_project_report_pdf(output_path: str = "PROJECT_REPORT.pdf"):
+def create_project_report_pdf(output_path: str = "docs/academic-submission/PROJECT_REPORT.pdf"):
     doc = SimpleDocTemplate(
         output_path,
         pagesize=letter,
@@ -683,7 +683,7 @@ def create_project_report_pdf(output_path: str = "PROJECT_REPORT.pdf"):
 # ==============================================================================
 # 3. TECHNICAL_RESEARCH_PAPER.docx GENERATOR
 # ==============================================================================
-def create_technical_research_paper_docx(output_path: str = "TECHNICAL_RESEARCH_PAPER.docx"):
+def create_technical_research_paper_docx(output_path: str = "docs/academic-submission/TECHNICAL_RESEARCH_PAPER.docx"):
     doc = Document()
 
     # Configure Margins
@@ -783,7 +783,7 @@ def create_technical_research_paper_docx(output_path: str = "TECHNICAL_RESEARCH_
 # ==============================================================================
 # 4. PROJECT_PRESENTATION.pptx GENERATOR (15 SLIDES)
 # ==============================================================================
-def create_project_presentation_pptx(output_path: str = "PROJECT_PRESENTATION.pptx"):
+def create_project_presentation_pptx(output_path: str = "docs/academic-submission/PROJECT_PRESENTATION.pptx"):
     prs = Presentation()
     prs.slide_width = PptxInches(13.333)
     prs.slide_height = PptxInches(7.5)

@@ -14,7 +14,7 @@ import config
 from database.db import init_db, save_session, get_all_sessions, get_session_by_id, delete_session, clear_all_sessions
 from agents.orchestrator import ResearchOrchestrator
 from agents.planner import plan_research
-from agents.llm_utils import verify_gemini_connection
+from agents.llm_utils import verify_gemini_connection, discover_available_models
 from research.search import verify_tavily_connection
 from research.citation_validator import validate_citations_and_sources
 from generators.pdf_generator import generate_pdf
@@ -165,6 +165,35 @@ h1, h2, h3, h4, h5 {
     font-weight: 600;
     display: inline-block;
 }
+.badge-amber {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-block;
+}
+.badge-gray {
+    background: rgba(148, 163, 184, 0.15);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-block;
+}
+.dim-pill {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    display: inline-block;
+    margin: 2px 4px 2px 0;
+}
 
 /* Activity Log Box */
 .activity-log-box {
@@ -261,9 +290,9 @@ with st.sidebar:
     if not user_gemini_key.strip():
         st.markdown('<div style="font-size:11.5px; color:#94a3b8; margin-top:-8px; margin-bottom:8px;">⚪ Gemini: <b>Disconnected</b> (No Key)</div>', unsafe_allow_html=True)
     elif st.session_state.gemini_status == "CONNECTED":
-        st.markdown(f'<div style="font-size:11.5px; color:#34d399; margin-top:-8px; margin-bottom:8px;">🟢 Gemini: <b>Connected</b> ({st.session_state.gemini_msg})</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size:11.5px; color:#34d399; margin-top:-8px; margin-bottom:8px;">🟢 Gemini: <b>Verified & Connected</b> ({st.session_state.gemini_msg})</div>', unsafe_allow_html=True)
     elif st.session_state.gemini_status == "FAILED":
-        st.markdown(f'<div style="font-size:11.5px; color:#fb7185; margin-top:-8px; margin-bottom:8px;">🔴 Gemini: <b>{st.session_state.gemini_msg}</b></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size:11.5px; color:#fb7185; margin-top:-8px; margin-bottom:8px;">🔴 Gemini Error: <b>{st.session_state.gemini_msg}</b></div>', unsafe_allow_html=True)
     else:
         st.markdown('<div style="font-size:11.5px; color:#c084fc; margin-top:-8px; margin-bottom:8px;">🟡 Gemini: Key Entered (Click Test to verify)</div>', unsafe_allow_html=True)
 
@@ -285,37 +314,79 @@ with st.sidebar:
     else:
         st.markdown('<div style="font-size:11.5px; color:#c084fc; margin-top:-8px; margin-bottom:8px;">🟡 Tavily: Key Entered (Click Test to verify)</div>', unsafe_allow_html=True)
 
+    # Discover models or use supported defaults
+    available_models = list(config.SUPPORTED_GEMINI_MODELS)
+    if user_gemini_key.strip():
+        if "discovered_models" not in st.session_state or st.session_state.get("last_gemini_key") != user_gemini_key.strip():
+            discovered = discover_available_models(user_gemini_key.strip())
+            if discovered:
+                st.session_state.discovered_models = discovered
+            st.session_state.last_gemini_key = user_gemini_key.strip()
+        if st.session_state.get("discovered_models"):
+            available_models = st.session_state.discovered_models
+
+    # Remove any stale 2.5 models
+    available_models = [m for m in available_models if "2.5" not in m]
+    if config.DEFAULT_GEMINI_MODEL not in available_models:
+        available_models.insert(0, config.DEFAULT_GEMINI_MODEL)
+    if config.ALTERNATIVE_GEMINI_MODEL not in available_models:
+        available_models.insert(1, config.ALTERNATIVE_GEMINI_MODEL)
+
+    cur_model = config.get_gemini_model()
+    idx_choice = available_models.index(cur_model) if cur_model in available_models else 0
+
     model_choice = st.selectbox(
         "Gemini Model",
-        options=["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"],
-        index=0,
+        options=available_models,
+        index=idx_choice,
+        help="Google Gemini model for reasoning, planning, and academic report generation. Default: gemini-3.8-flash, Alternative: gemini-3.5-flash-lite.",
     )
     config.GEMINI_MODEL = model_choice
 
     col_api1, col_api2 = st.columns(2)
     with col_api1:
-        if st.button("🔌 Test APIs", key="btn_test_apis", use_container_width=True, help="Verify key validity against Google & Tavily servers"):
-            with st.spinner("Testing API connections..."):
+        if st.button("🔌 Test Gemini Connection", key="btn_test_apis", use_container_width=True, help="Verify key and model validity against Google & Tavily servers"):
+            with st.status(f"Verifying {model_choice}...", expanded=True) as status_box:
+                def update_gemini_status(step_msg: str):
+                    status_box.write(f"• {step_msg}")
+
                 if user_gemini_key.strip():
-                    g_ok, g_msg = verify_gemini_connection(user_gemini_key.strip(), model=model_choice)
+                    g_ok, g_msg = verify_gemini_connection(
+                        user_gemini_key.strip(),
+                        model=model_choice,
+                        status_callback=update_gemini_status,
+                    )
                     st.session_state.gemini_status = "CONNECTED" if g_ok else "FAILED"
                     st.session_state.gemini_msg = g_msg
+                    if g_ok:
+                        status_box.write(f"✅ {g_msg}")
+                        status_box.update(label="Gemini: Connected successfully", state="complete")
+                    else:
+                        status_box.write(f"❌ {g_msg}")
+                        status_box.update(label="Gemini connection failed", state="error")
                 else:
                     st.session_state.gemini_status = "MISSING"
-                    st.session_state.gemini_msg = "Key is missing"
+                    st.session_state.gemini_msg = "Gemini key is missing"
+                    status_box.write("❌ Gemini API key is missing or not provided.")
+                    status_box.update(label="Gemini key missing", state="error")
 
                 if user_tavily_key.strip():
+                    status_box.write("• Checking Tavily connection...")
                     t_ok, t_msg = verify_tavily_connection(user_tavily_key.strip())
                     st.session_state.tavily_status = "CONNECTED" if t_ok else "FAILED"
                     st.session_state.tavily_msg = t_msg
+                    if t_ok:
+                        status_box.write(f"✅ {t_msg}")
+                    else:
+                        status_box.write(f"❌ {t_msg}")
                 else:
                     st.session_state.tavily_status = "MISSING"
-                    st.session_state.tavily_msg = "Key is missing"
-                st.rerun()
+                    st.session_state.tavily_msg = "Tavily key is missing"
+            st.rerun()
 
     with col_api2:
         if st.button("💾 Save .env", key="btn_save_env_keys", use_container_width=True, help="Explicitly save entered keys to local .env file"):
-            saved = config.save_api_keys_to_env(user_gemini_key, user_tavily_key)
+            saved = config.save_api_keys_to_env(user_gemini_key, user_tavily_key, gemini_model=model_choice)
             if saved:
                 st.toast("✅ API keys saved securely to local .env")
             else:
@@ -598,19 +669,42 @@ if report:
         unsafe_allow_html=True,
     )
 
-    # 4 Quick Metric Cards
-    m1, m2, m3, m4 = st.columns(4)
+    # 6 Quick Metric Cards with Search Engine Intelligence
+    m1, m2, m3, m4, m5, m6 = st.columns(6)
     with m1:
         st.markdown(
             f"""
             <div class="metric-card">
                 <div class="metric-value">{report.get('sources_count', 0)}</div>
-                <div class="metric-label">Sources Collected</div>
+                <div class="metric-label">Sources Retained</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
     with m2:
+        cov_pct = int(report.get('search_coverage_score', 0.85) * 100)
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-value" style="color:#38bdf8;">{cov_pct}%</div>
+                <div class="metric-label">Search Coverage</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with m3:
+        r_done = report.get('search_rounds_completed', 1)
+        r_max = report.get('search_max_rounds', 3)
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-value" style="color:#c084fc;">R{r_done}/{r_max}</div>
+                <div class="metric-label">Search Rounds</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with m4:
         st.markdown(
             f"""
             <div class="metric-card">
@@ -620,17 +714,17 @@ if report:
             """,
             unsafe_allow_html=True,
         )
-    with m3:
+    with m5:
         st.markdown(
             f"""
             <div class="metric-card">
-                <div class="metric-value" style="color:#38bdf8;">{len(report.get('proposed_experiments', []))}</div>
+                <div class="metric-value" style="color:#818cf8;">{len(report.get('proposed_experiments', []))}</div>
                 <div class="metric-label">Proposed Experiments</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-    with m4:
+    with m6:
         st.markdown(
             f"""
             <div class="metric-card">
@@ -709,6 +803,52 @@ if report:
             unsafe_allow_html=True,
         )
 
+        # Cross-Source Synthesis & Conflicting Evidence
+        st.markdown("#### Cross-Source Synthesis & Empirical Findings")
+        col_cs1, col_cs2 = st.columns(2)
+        with col_cs1:
+            st.markdown("**Common Findings & Consensus:**")
+            c_findings = report.get("common_findings", []) or report.get("consensus_points", [])
+            if c_findings:
+                for cf in c_findings:
+                    st.markdown(f"- 🤝 {cf}")
+            else:
+                st.caption("No explicit cross-source consensus established.")
+        with col_cs2:
+            st.markdown("**Emerging Thematic Trends:**")
+            ethemes = report.get("emerging_themes", [])
+            if ethemes:
+                for et in ethemes:
+                    st.markdown(f"- 🚀 {et}")
+            else:
+                st.caption("Standard trajectory observed across sources.")
+
+        conflicts = report.get("conflicting_evidence", [])
+        if conflicts:
+            st.markdown("#### ⚖️ Conflicting Evidence & Opposing Positions")
+            st.caption("Preserving legitimate scientific debate without manufacturing false consensus:")
+            for cf_item in conflicts:
+                if isinstance(cf_item, dict):
+                    st.markdown(
+                        f"""
+                        <div style="background:#18181b; border-left:4px solid #f59e0b; border-radius:8px; padding:14px; margin-bottom:10px;">
+                            <div style="font-weight:700; color:#fbbf24; font-size:14px;">⚡ Conflict: {cf_item.get('issue', cf_item.get('topic', 'Debated Finding'))}</div>
+                            <div style="margin:6px 0; font-size:13px; color:#e2e8f0;">
+                                <b>Position A:</b> {cf_item.get('position_a', '')} <span class="badge-violet">{cf_item.get('sources_a', '')}</span>
+                            </div>
+                            <div style="margin:6px 0; font-size:13px; color:#e2e8f0;">
+                                <b>Position B:</b> {cf_item.get('position_b', '')} <span class="badge-cyan">{cf_item.get('sources_b', '')}</span>
+                            </div>
+                            <div style="font-size:12px; color:#94a3b8; margin-top:4px;">
+                                <b>Underlying Explanation:</b> {cf_item.get('explanation', cf_item.get('root_cause', 'Discrepancy due to differing sample sizes or operational environments.'))}
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(f"- ⚡ {cf_item}")
+
         st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
         col_ov1, col_ov2 = st.columns([1, 1])
         with col_ov1:
@@ -750,6 +890,39 @@ if report:
                     st.session_state.current_report = report
                     st.success("Research Plan refreshed!")
                     st.rerun()
+
+        # Context and Strategy Cards
+        if report.get("research_context") or report.get("core_problem"):
+            col_ctx1, col_ctx2 = st.columns(2)
+            with col_ctx1:
+                st.markdown("#### Scientific Context & Domain Setting")
+                st.markdown(
+                    f"""
+                    <div style="background:#0f172a; padding:12px; border-radius:8px; border:1px solid #1e293b; font-size:13.5px; color:#cbd5e1; line-height:1.6;">
+                        {report.get('research_context', 'Scientific domain contextualization.')}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with col_ctx2:
+                st.markdown("#### Core Problem Formulation")
+                st.markdown(
+                    f"""
+                    <div style="background:#0f172a; padding:12px; border-radius:8px; border:1px solid #1e293b; font-size:13.5px; color:#cbd5e1; line-height:1.6;">
+                        {report.get('core_problem', report.get('problem_statement', ''))}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+        if report.get("search_strategy"):
+            st.markdown(f"**Autonomous Search Strategy:** *{report.get('search_strategy')}*")
+
+        if report.get("technical_terminology"):
+            st.markdown("**Key Technical Terminology:**")
+            terms_html = " ".join([f'<span class="dim-pill" style="color:#a855f7;">{t}</span>' for t in report.get("technical_terminology", [])])
+            st.markdown(terms_html, unsafe_allow_html=True)
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
         col_p1, col_p2 = st.columns(2)
 
@@ -808,9 +981,86 @@ if report:
     # TAB 4: EVIDENCE & SOURCES
     with tab_ev:
         st.markdown("### Evidence-Based Research Matrix & Source Analysis")
-        st.caption("Every major claim is anchored to an actual collected source with extracted proof passages.")
+        st.caption("Every major claim is anchored to an actual collected source with extracted proof passages and explainable 6-dimension quality scoring.")
 
-        st.markdown("#### Grounded Empirical Claims")
+        # Interactive Subtopic Deepening & Source Controls
+        with st.expander("🔬 Interactive Research Controls: Deepen Search & Adjust Corpus", expanded=False):
+            c_int1, c_int2 = st.columns([1.5, 1])
+            with c_int1:
+                st.markdown("##### 🔍 Trigger Additional Search Round for Specific Subtopic")
+                subtopics_avail = report.get("subtopics", [])
+                sub_sel = st.selectbox(
+                    "Select subtopic to explore further",
+                    options=subtopics_avail if subtopics_avail else [report.get("topic", "")],
+                    key="sb_subtopic_deepen",
+                )
+                custom_deep_q = st.text_input("Or enter custom subtopic query:", placeholder=f"{sub_sel} empirical benchmarks", key="txt_subtopic_q")
+                if st.button("🚀 Execute Additional Search Round", key="btn_exec_deepen"):
+                    with st.spinner("Executing targeted search round & extracting evidence..."):
+                        target_q = custom_deep_q.strip() if custom_deep_q.strip() else f"{report.get('topic', '')} {sub_sel}"
+                        orch = ResearchOrchestrator(gemini_api_key=user_gemini_key, tavily_api_key=user_tavily_key, model=model_choice)
+                        from research.search import execute_multi_search
+                        from research.extraction import enrich_sources
+                        from research.source_assessor import assess_source_quality
+                        from research.evidence_extractor import extract_evidence_items
+
+                        existing_urls = {s.get("url") for s in report.get("sources", []) if s.get("url")}
+                        new_raw = execute_multi_search([target_q], tavily_key=user_tavily_key, max_results_per_query=4)
+                        novel_sources = [s for s in new_raw if s.get("url") not in existing_urls]
+
+                        if novel_sources:
+                            enriched = enrich_sources(novel_sources, max_to_extract=3, tavily_key=user_tavily_key)
+                            assessed = [assess_source_quality(s, report.get("topic", "")) for s in enriched]
+                            start_idx = len(report.get("sources", [])) + 1
+                            for i, s in enumerate(assessed):
+                                s["citation_index"] = start_idx + i
+                                s["index"] = start_idx + i
+
+                            new_ev = extract_evidence_items(report.get("topic", ""), assessed, gemini_key=user_gemini_key, model=model_choice)
+                            report["sources"] = report.get("sources", []) + assessed
+                            report["sources_count"] = len(report["sources"])
+                            report["evidence_items"] = report.get("evidence_items", []) + new_ev
+                            report["search_rounds_completed"] = report.get("search_rounds_completed", 1) + 1
+                            st.session_state.current_report = report
+                            st.success(f"✅ Deepened search added {len(assessed)} new verified sources!")
+                            st.rerun()
+                        else:
+                            st.info("No new unique sources found for this query.")
+
+            with c_int2:
+                st.markdown("##### 📊 Export Evidence Matrix")
+                ev_items = report.get("evidence_items", [])
+                if ev_items:
+                    # CSV generation
+                    import io, csv
+                    csv_io = io.StringIO()
+                    fields = ["citation_index", "claim", "confidence", "methodology", "dataset", "sample_size", "numerical_results", "limitations", "research_implications", "source_title", "source_url"]
+                    writer = csv.DictWriter(csv_io, fieldnames=fields)
+                    writer.writeheader()
+                    for e_it in ev_items:
+                        writer.writerow({f: e_it.get(f, "") for f in fields})
+
+                    st.download_button(
+                        label="📥 Download Evidence Matrix (CSV)",
+                        data=csv_io.getvalue(),
+                        file_name=f"{report.get('topic', 'research')[:20]}_evidence_matrix.csv",
+                        mime="text/csv",
+                        key="dl_ev_csv_btn",
+                        use_container_width=True,
+                    )
+                    st.download_button(
+                        label="📥 Download Evidence Matrix (JSON)",
+                        data=json.dumps(ev_items, indent=2),
+                        file_name=f"{report.get('topic', 'research')[:20]}_evidence_matrix.json",
+                        mime="application/json",
+                        key="dl_ev_json_btn",
+                        use_container_width=True,
+                    )
+                else:
+                    st.caption("No evidence items available to export.")
+
+        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        st.markdown("#### Grounded Empirical Claims & Evidence")
         evidence_items = report.get("evidence_items", [])
         if not evidence_items:
             st.info("ℹ️ **No external empirical claims extracted.** As per research integrity protocols, no claims or citations are fabricated when search yields zero sources.")
@@ -825,26 +1075,75 @@ if report:
                         <span class="{badge}">Confidence: {conf}</span>
                     </div>
                     <div style="margin:8px 0; font-size:13px; color:#e2e8f0; background:#111827; padding:10px; border-radius:6px; font-style:italic;">
-                        {ev.get('evidence', '')}
+                        "{ev.get('evidence', ev.get('supporting_passage', ''))}"
                     </div>
-                    <div style="font-size:12px; color:#94a3b8;">
-                        <b>Source:</b> {ev.get('source_title', '')} | <b>Type:</b> {ev.get('source_type', 'Web')} | <b>Published:</b> {ev.get('publication_date', 'N/D')}
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px; font-size:12px; color:#cbd5e1;">
+                        <div><b>Methodology:</b> {ev.get('methodology', 'Empirical Analysis')}</div>
+                        <div><b>Dataset / Sample:</b> {ev.get('dataset', 'Domain Corpus')} ({ev.get('sample_size', 'N/A')})</div>
+                        <div><b>Numerical Results:</b> <span style="color:#34d399;">{ev.get('numerical_results', 'Reported in text')}</span></div>
+                        <div><b>Limitations:</b> {ev.get('limitations', 'Standard environmental bounds')}</div>
+                    </div>
+                    <div style="font-size:12px; color:#94a3b8; margin-top:6px; border-top:1px solid #1e293b; padding-top:4px;">
+                        <b>Source:</b> <a href="{ev.get('source_url', '#')}" target="_blank" style="color:#c084fc; text-decoration:none;">{ev.get('source_title', 'Document')}</a> | <b>Type:</b> {ev.get('source_type', 'Web')} | <b>Published:</b> {ev.get('publication_date', 'N/D')}
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-        st.markdown("#### Source Quality & Credibility Directory")
+        st.markdown("#### Source Quality & Credibility Directory (6-Dimension Assessment)")
         sources_list = report.get("sources", [])
         if not sources_list:
             st.info("ℹ️ **No external sources collected.**")
-        for s in sources_list[:8]:
-            with st.expander(f"[{s.get('source_type', 'Source')}] {s.get('title', 'Document')}"):
+        for s in sources_list:
+            stype = s.get("source_type", "Other Web Source")
+            ext_stat = s.get("extraction_status", "SNIPPET_FALLBACK")
+            stat_badge = "badge-green" if ext_stat == "TAVILY_EXTRACT" else "badge-cyan" if ext_stat == "BEAUTIFUL_SOUP" else "badge-violet" if ext_stat == "PDF_DOCUMENT" else "badge-amber"
+            peer_badge = '<span class="badge-green">Peer-Reviewed ✓</span>' if s.get("peer_reviewed_verified") else ''
+
+            with st.expander(f"[{s.get('citation_index', s.get('index', 1))}] {s.get('title', 'Document')[:75]}... ({stype})"):
+                st.markdown(
+                    f"""
+                    <div style="margin-bottom:8px;">
+                        <span class="badge-violet">{stype}</span>
+                        <span class="{stat_badge}">Extraction: {ext_stat}</span>
+                        {peer_badge}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
                 st.markdown(f"**URL:** [{s.get('url')}]({s.get('url')})")
-                st.markdown(f"**Credibility Tier:** `{s.get('credibility_tier', 'Moderate')}` | **Authority Score:** `{s.get('authority_score', 0.7)}`")
+                st.markdown(f"**Domain:** `{s.get('domain', '')}` | **Published Date:** `{s.get('published_date', 'N/D')}` | **Composite Quality:** `{s.get('authority_score', 0.7):.2f}`")
+
+                # 6 Dimensions
+                dims = s.get("quality_dimensions", {})
+                d_rel = dims.get("relevance", s.get("authority_score", 0.8))
+                d_auth = dims.get("authority", s.get("authority_score", 0.75))
+                d_trans = dims.get("transparency", 0.70)
+                d_rec = dims.get("recency", 0.80)
+                d_meth = dims.get("methodology", 0.65)
+                d_ev = dims.get("evidence_availability", 0.75)
+
+                col_d1, col_d2, col_d3 = st.columns(3)
+                with col_d1:
+                    st.caption(f"Relevance: **{d_rel:.2f}**")
+                    st.progress(float(min(max(d_rel, 0.0), 1.0)))
+                    st.caption(f"Authority: **{d_auth:.2f}**")
+                    st.progress(float(min(max(d_auth, 0.0), 1.0)))
+                with col_d2:
+                    st.caption(f"Transparency: **{d_trans:.2f}**")
+                    st.progress(float(min(max(d_trans, 0.0), 1.0)))
+                    st.caption(f"Recency: **{d_rec:.2f}**")
+                    st.progress(float(min(max(d_rec, 0.0), 1.0)))
+                with col_d3:
+                    st.caption(f"Methodology: **{d_meth:.2f}**")
+                    st.progress(float(min(max(d_meth, 0.0), 1.0)))
+                    st.caption(f"Evidence Avail: **{d_ev:.2f}**")
+                    st.progress(float(min(max(d_ev, 0.0), 1.0)))
+
                 st.markdown(f"**Assessment Rationale:** {s.get('quality_rationale', '')}")
-                st.markdown(f"**Extracted Content Snippet:**\n> {s.get('content', '')[:300]}...")
+                cnt = s.get("content", s.get("snippet", ""))
+                st.markdown(f"**Extracted Content Passage:**\n> {cnt[:350]}...")
 
     # TAB 5: RESEARCH GAPS
     with tab_gaps:

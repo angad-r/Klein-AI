@@ -35,6 +35,7 @@ def find_research_gaps(
     topic: str,
     analysis_data: Dict[str, Any],
     gemini_key: Optional[str] = None,
+    model: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Identifies critical research gaps with 7 structured dimensions."""
     comparative = json.dumps(analysis_data.get("comparative_analysis", []), indent=2)
@@ -71,7 +72,7 @@ Return ONLY a valid JSON list of objects.
 """
     if config.is_gemini_available(gemini_key):
         try:
-            raw = call_gemini(prompt, api_key=gemini_key)
+            raw = call_gemini(prompt, api_key=gemini_key, model=model)
             gaps = extract_json_from_text(raw)
             if gaps and isinstance(gaps, list) and len(gaps) >= 2:
                 return gaps
